@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Scissors, ChevronDown } from "lucide-react";
 import heroImg from "@/assets/hero-barbershop.jpg";
 
@@ -50,14 +51,12 @@ const HeroSection = () => {
           <p className="text-foreground/70 text-base md:text-lg max-w-xl mx-auto mb-10 font-light leading-relaxed">
             Experiência premium em corte masculino. Tradição, estilo e precisão em cada detalhe.
           </p>
-          <a
-            href="https://wa.me/5551999999999"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/agendar"
             className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity"
           >
             Agendar Horário
-          </a>
+          </Link>
         </div>
       </div>
 

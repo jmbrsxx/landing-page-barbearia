@@ -5,6 +5,7 @@ import AboutSection from "@/components/AboutSection";
 import GallerySection from "@/components/GallerySection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import CookieBanner from "@/components/CookieBanner";
 
 const Index = () => (
   <div className="min-h-screen bg-background">
@@ -15,6 +16,7 @@ const Index = () => (
     <GallerySection />
     <ContactSection />
     <Footer />
+    <CookieBanner />
   </div>
 );
 

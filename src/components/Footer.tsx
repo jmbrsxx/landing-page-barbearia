@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Scissors, Instagram, Facebook } from "lucide-react";
 
 const Footer = () => (
@@ -10,9 +11,19 @@ const Footer = () => (
             Barber<span className="text-primary">Shop</span> Canoas
           </span>
         </div>
-        <p className="text-muted-foreground text-xs tracking-wider">
-          © {new Date().getFullYear()} BarberShop Canoas. Todos os direitos reservados.
-        </p>
+
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <Link
+            to="/politica-cookies"
+            className="text-muted-foreground hover:text-primary transition-colors text-xs"
+          >
+            Política de Cookies
+          </Link>
+          <p className="text-muted-foreground text-xs tracking-wider">
+            © {new Date().getFullYear()} BarberShop Canoas. Todos os direitos reservados.
+          </p>
+        </div>
+
         <div className="flex gap-4">
           <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram">
             <Instagram className="w-5 h-5" />

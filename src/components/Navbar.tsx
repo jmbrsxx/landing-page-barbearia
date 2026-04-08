@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Scissors, Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Scissors, Menu, X, Calendar, Settings, User } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { Button } from "@/components/ui/button";
+import AuthModal from "@/components/AuthModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { auth } from "@/lib/firebase";
 
 const links = [
   { label: "Início", href: "#inicio" },
@@ -12,6 +18,16 @@ const links = [
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -45,7 +61,33 @@ const Navbar = () => {
               {l.label}
             </a>
           ))}
+          <div className="flex items-center gap-2 pl-6 border-l border-border">
+            <Link to="/agendar">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Agendar
+              </Button>
+            </Link>
+            <Link to="/admin/agendamentos">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Admin
+              </Button>
+            </Link>
+            {user ? (
+              <Button variant="secondary" size="sm" className="flex items-center gap-2" onClick={handleSignOut}>
+                <User className="w-4 h-4" />
+                Sair
+              </Button>
+            ) : (
+              <Button variant="secondary" size="sm" className="flex items-center gap-2" onClick={() => setShowAuthModal(true)}>
+                <User className="w-4 h-4" />
+                Entrar / Cadastrar
+              </Button>
+            )}
+          </div>
         </div>
+        {showAuthModal && <AuthModal onAuthSuccess={() => setShowAuthModal(false)} />}
 
         <button
           className="md:hidden text-foreground"
@@ -69,6 +111,45 @@ const Navbar = () => {
                 {l.label}
               </a>
             ))}
+            <div className="border-t border-border pt-6 w-full flex flex-col gap-3 px-6">
+              <Link to="/agendar" onClick={() => setMenuOpen(false)}>
+                <Button variant="outline" className="w-full flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Agendar Consulta
+                </Button>
+              </Link>
+              <Link to="/admin/agendamentos" onClick={() => setMenuOpen(false)}>
+                <Button variant="ghost" className="w-full flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Painel Admin
+                </Button>
+              </Link>
+              {!user ? (
+                <Button
+                  variant="secondary"
+                  className="w-full flex items-center gap-2"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowAuthModal(true);
+                  }}
+                >
+                  <User className="w-4 h-4" />
+                  Entrar / Cadastrar
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  className="w-full flex items-center gap-2"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    handleSignOut();
+                  }}
+                >
+                  <User className="w-4 h-4" />
+                  Sair
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,0 +1,120 @@
+import { collection, addDoc, query, where, getDocs, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
+
+export interface AppointmentData {
+  userId: string;
+  name: string;
+  phone: string;
+  email: string;
+  date: string;
+  time: string;
+  services: string[];
+  notes: string;
+  status: "pending" | "confirmed" | "cancelled";
+}
+
+export const appointmentsService = {
+  // Salvar novo agendamento
+  async createAppointment(data: AppointmentData) {
+    console.log('🔍 appointmentsService.createAppointment - Iniciando...');
+    console.log('👤 Usuário atual:', auth.currentUser?.uid);
+    console.log('📝 Dados do agendamento:', data);
+
+    try {
+      const docRef = await addDoc(collection(db, "appointments"), {
+        ...data,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+      console.log('✅ Agendamento criado com sucesso! ID:', docRef.id);
+      return docRef.id;
+    } catch (error: any) {
+      console.error('❌ Erro ao criar agendamento:', error);
+      console.error('🔍 Detalhes do erro:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
+  },
+
+  // Obter agendamentos do usuário
+  async getUserAppointments(userId: string) {
+    console.log('🔍 appointmentsService.getUserAppointments - Buscando para usuário:', userId);
+    try {
+      const q = query(collection(db, "appointments"), where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      console.log('✅ Agendamentos do usuário encontrados:', querySnapshot.docs.length);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar agendamentos do usuário:', error);
+      throw error;
+    }
+  },
+
+  // Obter todos os agendamentos confirmados (para o painel do admin)
+  async getAllConfirmedAppointments() {
+    console.log('🔍 appointmentsService.getAllConfirmedAppointments - Buscando todos os confirmados');
+    console.log('👤 Usuário atual:', auth.currentUser?.uid);
+
+    try {
+      const q = query(
+        collection(db, "appointments"),
+        where("status", "==", "confirmed")
+      );
+      const querySnapshot = await getDocs(q);
+      console.log('✅ Agendamentos confirmados encontrados:', querySnapshot.docs.length);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar agendamentos confirmados:', error);
+      console.error('🔍 Detalhes do erro:', {
+        code: error.code,
+        message: error.message
+      });
+      throw error;
+    }
+  },
+
+  // Obter horários reservados de uma data
+  async getReservedSlots(date: string) {
+    console.log('🔍 appointmentsService.getReservedSlots - Verificando horários para:', date);
+    try {
+      const q = query(
+        collection(db, "appointments"),
+        where("date", "==", date),
+        where("status", "!=", "cancelled")
+      );
+      const querySnapshot = await getDocs(q);
+      const times = querySnapshot.docs.map((doc) => doc.data().time);
+      console.log('✅ Horários reservados encontrados:', times);
+      return times;
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar horários reservados:', error);
+      throw error;
+    }
+  },
+
+  // Atualizar status do agendamento
+  async updateAppointmentStatus(appointmentId: string, status: "pending" | "confirmed" | "cancelled") {
+    console.log('🔍 appointmentsService.updateAppointmentStatus - Atualizando:', appointmentId, 'para:', status);
+    try {
+      const appointmentRef = doc(db, "appointments", appointmentId);
+      await updateDoc(appointmentRef, {
+        status,
+        updatedAt: Timestamp.now(),
+      });
+      console.log('✅ Status atualizado com sucesso');
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar agendamento:', error);
+      throw error;
+    }
+  },
+};
