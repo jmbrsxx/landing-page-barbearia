@@ -150,18 +150,7 @@ const AppointmentPage = () => {
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-6 max-w-4xl">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </Button>
-          <h1 className="font-heading text-4xl md:text-5xl font-bold">Agendar Consulta</h1>
-        </div>
+        <h1 className="font-heading text-4xl md:text-5xl font-bold mb-8">Agendar Consulta</h1>
         <Card>
           <CardHeader>
             <CardTitle>Preencha os detalhes da sua consulta</CardTitle>
@@ -273,7 +262,7 @@ const AppointmentPage = () => {
         </Card>
       </div>
       
-      {showAuthModal && <AuthModal onAuthSuccess={handleAuthSuccess} />}
+      {showAuthModal && <AuthModal onAuthSuccess={handleAuthSuccess} onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 };

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
@@ -6,18 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Chrome, Mail } from "lucide-react";
+import { AlertCircle, Chrome, Mail, X } from "lucide-react";
 
 interface AuthModalProps {
   onAuthSuccess: () => void;
+  onClose?: () => void;
+  showBackToHome?: boolean;
 }
 
-const AuthModal = ({ onAuthSuccess }: AuthModalProps) => {
+const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModalProps) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -72,13 +86,25 @@ const AuthModal = ({ onAuthSuccess }: AuthModalProps) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
+  if (!mounted) return null;
+
+  const modal = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
+      <Card className="relative w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <CardHeader className="relative">
           <CardTitle className="text-center">Autenticação Necessária</CardTitle>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-2 top-2 h-8 w-8 p-0"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
@@ -106,6 +132,15 @@ const AuthModal = ({ onAuthSuccess }: AuthModalProps) => {
                 <Chrome className="w-4 h-4" />
                 {isLoading ? "Autenticando..." : "Entrar com Google"}
               </Button>
+              {showBackToHome && (
+                <Button
+                  onClick={() => navigate('/')}
+                  variant="ghost"
+                  className="w-full"
+                >
+                  Voltar ao Início
+                </Button>
+              )}
             </TabsContent>
 
             {/* Email Sign Up/In */}
@@ -201,6 +236,8 @@ const AuthModal = ({ onAuthSuccess }: AuthModalProps) => {
       </Card>
     </div>
   );
+
+  return createPortal(modal, document.body);
 };
 
 export default AuthModal;

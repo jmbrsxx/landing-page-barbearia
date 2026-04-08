@@ -7,7 +7,7 @@ import AppointmentsList from "@/components/AppointmentsList";
 import AdminDashboard from "@/components/AdminDashboard";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { CalendarCheck, BarChart3, Settings, LogOut, ArrowLeft } from "lucide-react";
+import { CalendarCheck, BarChart3, Settings, LogOut, ArrowLeft, X } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -30,8 +30,16 @@ const AdminPage = () => {
       <div className="min-h-screen bg-background py-12">
         <div className="container mx-auto px-6 max-w-3xl">
           <Card>
-            <CardHeader>
+            <CardHeader className="relative">
               <CardTitle>Login Necessário</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-2 h-10 w-10 p-0"
+                onClick={() => navigate('/')}
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600">
@@ -42,7 +50,7 @@ const AdminPage = () => {
               </Button>
             </CardContent>
           </Card>
-          {showAuthModal && <AuthModal onAuthSuccess={() => setShowAuthModal(false)} />}
+          {showAuthModal && <AuthModal onAuthSuccess={() => setShowAuthModal(false)} onClose={() => setShowAuthModal(false)} showBackToHome={true} />}
         </div>
       </div>
     );

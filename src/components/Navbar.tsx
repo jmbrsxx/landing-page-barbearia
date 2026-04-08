@@ -87,7 +87,7 @@ const Navbar = () => {
             )}
           </div>
         </div>
-        {showAuthModal && <AuthModal onAuthSuccess={() => setShowAuthModal(false)} />}
+        {showAuthModal && <AuthModal onAuthSuccess={() => setShowAuthModal(false)} onClose={() => setShowAuthModal(false)} />}
 
         <button
           className="md:hidden text-foreground"
