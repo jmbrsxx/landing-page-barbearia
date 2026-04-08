@@ -12,25 +12,31 @@ import CookiePolicy from "./pages/CookiePolicy.tsx";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter basename="/landing-page-barbearia/">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/agendar" element={<AppointmentPage />} />
-            <Route path="/admin/agendamentos" element={<AdminPage />} />
-            <Route path="/politica-cookies" element={<CookiePolicy />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const basename = window.location.pathname.startsWith('/landing-page-barbearia')
+    ? '/landing-page-barbearia'
+    : '/';
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter basename={basename}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/agendar" element={<AppointmentPage />} />
+              <Route path="/admin/agendamentos" element={<AdminPage />} />
+              <Route path="/politica-cookies" element={<CookiePolicy />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
