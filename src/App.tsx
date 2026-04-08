@@ -14,7 +14,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   // Handle GitHub Pages SPA redirect
-  if (window.location.search.startsWith('/?')) {
+  if (window.location.search.startsWith('?/')) {
     const path = window.location.search.slice(2).replace(/~and~/g, '&');
     window.history.replaceState(null, '', path + window.location.hash);
   }

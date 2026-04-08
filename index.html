@@ -15,6 +15,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <script>
+      const path = window.location.pathname;
+      const base = path.startsWith('/landing-page-barbearia') ? '/landing-page-barbearia/' : '/';
+      document.write(`<base href="${base}">`);
+    </script>
   </head>
 
   <body>
