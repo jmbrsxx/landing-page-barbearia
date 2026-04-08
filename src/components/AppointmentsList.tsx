@@ -198,7 +198,7 @@ const AppointmentsList = () => {
                 )}
 
                 <div className="mt-4 flex justify-between items-center">
-                  <Badge variant="outline" className="bg-green-50">
+                  <Badge className="bg-green-600 text-white border-green-700">
                     {appointment.status === "confirmed" ? "Confirmado" : "Cancelado"}
                   </Badge>
                   <Button

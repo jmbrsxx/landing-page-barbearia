@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,25 +14,11 @@ interface ConfirmationPageProps {
     services: string[];
     notes?: string;
   };
+  onNewAppointment?: () => void;
 }
 
-const ConfirmationPage = ({ appointmentData }: ConfirmationPageProps) => {
+const ConfirmationPage = ({ appointmentData, onNewAppointment }: ConfirmationPageProps) => {
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState(5);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          navigate("/");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background py-12">
@@ -55,18 +40,18 @@ const ConfirmationPage = ({ appointmentData }: ConfirmationPageProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-600">Nome</p>
-                  <p className="font-medium">{appointmentData.name}</p>
+                  <p className="font-medium text-gray-900">{appointmentData.name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Telefone</p>
-                  <p className="font-medium flex items-center gap-2">
+                  <p className="font-medium text-gray-900 flex items-center gap-2">
                     <Phone className="w-4 h-4" />
                     {appointmentData.phone}
                   </p>
                 </div>
                 <div className="md:col-span-2">
                   <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{appointmentData.email}</p>
+                  <p className="font-medium text-gray-900">{appointmentData.email}</p>
                 </div>
               </div>
             </div>
@@ -80,7 +65,7 @@ const ConfirmationPage = ({ appointmentData }: ConfirmationPageProps) => {
                     <Calendar className="w-4 h-4" />
                     Data
                   </p>
-                  <p className="font-medium text-lg">
+                  <p className="font-medium text-lg text-gray-900">
                     {new Date(appointmentData.date + "T00:00:00").toLocaleDateString("pt-BR", {
                       weekday: "long",
                       year: "numeric",
@@ -94,7 +79,7 @@ const ConfirmationPage = ({ appointmentData }: ConfirmationPageProps) => {
                     <Clock className="w-4 h-4" />
                     Horário
                   </p>
-                  <p className="font-medium text-lg">{appointmentData.time}</p>
+                  <p className="font-medium text-lg text-gray-900">{appointmentData.time}</p>
                 </div>
               </div>
             </div>
@@ -136,14 +121,10 @@ const ConfirmationPage = ({ appointmentData }: ConfirmationPageProps) => {
               <Button onClick={() => navigate("/")} className="flex-1">
                 Voltar para Início
               </Button>
-              <Button onClick={() => navigate("/agendar")} variant="outline" className="flex-1">
+              <Button onClick={onNewAppointment} variant="outline" className="flex-1">
                 Novo Agendamento
               </Button>
             </div>
-
-            <p className="text-center text-sm text-gray-500">
-              Redirecionando em {countdown} segundo{countdown !== 1 ? "s" : ""}...
-            </p>
           </CardContent>
         </Card>
       </div>

@@ -4,7 +4,13 @@ Para que os agendamentos sejam salvos corretamente, você precisa configurar as 
 
 ## ⚠️ IMPORTANTE: Problema Atual
 
-Você está vendo erros de "Missing or insufficient permissions" porque as regras de segurança do Firestore ainda não foram aplicadas. Isso é **obrigatório** para que o sistema funcione.
+Você está vendo erros de "Missing or insufficient permissions" porque as regras de segurança do Firestore ainda não foram aplicadas ou estão muito restritivas. Isso é **obrigatório** para que o sistema funcione, especialmente para o painel admin poder cancelar agendamentos.
+
+### Problema específico: Cancelamento de agendamentos
+O erro "Missing or insufficient permissions" ao tentar cancelar agendamentos no painel admin indica que as regras atuais só permitem que usuários atualizem seus próprios agendamentos. Para o painel admin funcionar corretamente, qualquer usuário autenticado deve poder gerenciar todos os agendamentos.
+
+### Solução rápida para cancelamento:
+Se você já tem regras configuradas mas ainda vê o erro, atualize suas regras para permitir que usuários autenticados possam atualizar qualquer agendamento (como mostrado abaixo).
 
 ## Como configurar (Passo a passo):
 
@@ -32,22 +38,14 @@ service cloud.firestore {
       // Usuários autenticados podem criar novos agendamentos
       allow create: if request.auth != null;
 
-      // Usuários podem ler seus próprios agendamentos
+      // Usuários autenticados podem ler todos os agendamentos (para painel admin)
       allow read: if request.auth != null;
 
-      // Apenas o criador ou admin pode atualizar
-      allow update: if request.auth != null &&
-        (resource.data.userId == request.auth.uid || isAdmin());
+      // Usuários autenticados podem atualizar qualquer agendamento (para painel admin)
+      allow update: if request.auth != null;
 
-      // Apenas o criador ou admin pode deletar
-      allow delete: if request.auth != null &&
-        (resource.data.userId == request.auth.uid || isAdmin());
-    }
-
-    // Função auxiliar para verificar se é admin
-    // (expanda depois se quiser implementar papéis de admin)
-    function isAdmin() {
-      return false; // Por enquanto, apenas criadores podem gerenciar
+      // Usuários autenticados podem deletar qualquer agendamento (para painel admin)
+      allow delete: if request.auth != null;
     }
   }
 }

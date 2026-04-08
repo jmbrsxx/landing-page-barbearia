@@ -116,6 +116,7 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect }: TimeSlot
             return (
               <button
                 key={slot}
+                type="button"
                 onClick={() => !isDisabled && onTimeSelect(slot)}
                 disabled={isDisabled}
                 className={cn(

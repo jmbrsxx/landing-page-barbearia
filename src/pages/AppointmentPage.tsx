@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scissors, Sparkles, Wind, Droplets, Clock, AlertCircle } from "lucide-react";
+import { Scissors, Sparkles, Wind, Droplets, Clock, AlertCircle, ArrowLeft } from "lucide-react";
 import TimeSlotSelector from "@/components/TimeSlotSelector";
 import AuthModal from "@/components/AuthModal";
 import ConfirmationPage from "@/components/ConfirmationPage";
@@ -125,20 +125,43 @@ const AppointmentPage = () => {
 
   const handleAuthSuccess = async () => {
     setShowAuthModal(false);
-    // Tenta enviar novamente após autenticação
-    const form = new FormData();
-    form.set("submitEvent", "true");
-    handleSubmit(new Event("submit") as any);
+    // Após autenticação, o usuário pode clicar em "Agendar Consulta" novamente
+  };
+
+  const handleNewAppointment = () => {
+    // Limpar dados de confirmação e formulário para novo agendamento
+    setConfirmationData(null);
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      date: "",
+      time: "",
+      notes: "",
+    });
+    setSelectedServices([]);
+    setError(null);
   };
 
   if (confirmationData) {
-    return <ConfirmationPage appointmentData={confirmationData} />;
+    return <ConfirmationPage appointmentData={confirmationData} onNewAppointment={handleNewAppointment} />;
   }
 
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-6 max-w-4xl">
-        <h1 className="font-heading text-4xl md:text-5xl font-bold text-center mb-8">Agendar Consulta</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Button>
+          <h1 className="font-heading text-4xl md:text-5xl font-bold">Agendar Consulta</h1>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Preencha os detalhes da sua consulta</CardTitle>
@@ -231,9 +254,20 @@ const AppointmentPage = () => {
                   placeholder="Alguma observação adicional..."
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Processando..." : "Agendar Consulta"}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => navigate("/")}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Processando..." : "Agendar Consulta"}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
