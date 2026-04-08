@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const links = [
   { label: "Início", href: "#inicio" },
@@ -19,14 +29,20 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isConfirmingLogout, setIsConfirmingLogout] = useState(false);
   const { user } = useAuth();
 
-  const handleSignOut = async () => {
+  const handleConfirmLogout = async () => {
     try {
       await signOut(auth);
+      setIsConfirmingLogout(false);
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
+  };
+
+  const handleSignOut = () => {
+    setIsConfirmingLogout(true);
   };
 
   useEffect(() => {
@@ -153,6 +169,23 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      <AlertDialog open={isConfirmingLogout} onOpenChange={setIsConfirmingLogout}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você será desconectado de sua conta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout}>
+              Sair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </nav>
   );
 };
