@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signOut,
+} from "firebase/auth";
+import { auth, actionCodeSettings } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +28,7 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,7 +58,8 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setMessage(null);
+
     if (password !== confirmPassword) {
       setError("As senhas não conferem");
       return;
@@ -63,10 +73,55 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
     try {
       setIsLoading(true);
       setError(null);
-      await createUserWithEmailAndPassword(auth, email, password);
-      onAuthSuccess();
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (userCredential.user) {
+        await sendEmailVerification(userCredential.user);
+        await signOut(auth);
+      }
+      setMessage("Conta criada com sucesso! Verifique seu email para ativar a conta.");
+      setPassword("");
+      setConfirmPassword("");
     } catch (err: any) {
-      setError(err.message || "Erro ao criar conta");
+      if (err.code === "auth/email-already-in-use") {
+        setError("Este email já está cadastrado. Faça login ou recupere sua senha.");
+      } else {
+        setError(err.message || "Erro ao criar conta");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      setError("Digite seu email para recuperar a conta.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      setMessage(null);
+      console.log("Iniciando recuperação de senha para:", email);
+      console.log("Auth configurado:", auth);
+      console.log("ActionCodeSettings:", actionCodeSettings);
+      const result = await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      console.log("Email de recuperação enviado com sucesso!", result);
+      setMessage("✓ Email enviado com sucesso! Verifique sua caixa de entrada e pasta de spam.");
+      setEmail("");
+    } catch (err: any) {
+      console.error("Erro completo:", err);
+      console.error("Código de erro:", err.code);
+      console.error("Mensagem de erro:", err.message);
+      if (err.code === "auth/user-not-found") {
+        setError("❌ Este email não tem uma conta registrada. Crie uma conta primeiro.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("❌ Email inválido. Digite um email válido.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("❌ Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+      } else {
+        setError(`❌ Erro: ${err.code || "desconhecido"} - ${err.message || "Não foi possível enviar o email de recuperação. Tente novamente."}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,13 +129,27 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage(null);
+
     try {
       setIsLoading(true);
       setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user);
+        await signOut(auth);
+        setError("Email não verificado. Enviamos um novo email de verificação.");
+        return;
+      }
       onAuthSuccess();
     } catch (err: any) {
-      setError(err.message || "Erro ao fazer login");
+      if (err.code === "auth/wrong-password") {
+        setError("Senha incorreta. Verifique e tente novamente.");
+      } else if (err.code === "auth/user-not-found") {
+        setError("Email não encontrado. Crie uma conta ou recupere sua senha.");
+      } else {
+        setError(err.message || "Erro ao fazer login");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,6 +178,11 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+          {message && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+              {message}
             </div>
           )}
 
@@ -229,6 +303,15 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
                 >
                   {isLoading ? "Entrando..." : "Entrar"}
                 </Button>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    className="text-sm text-primary underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
               </form>
             </TabsContent>
           </Tabs>

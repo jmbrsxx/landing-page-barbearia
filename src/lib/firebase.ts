@@ -23,6 +23,22 @@ export const auth = getAuth(app);
 // Configure Auth persistence and popup behavior
 auth.useDeviceLanguage();
 
+// Configure email action settings for password reset
+import { ActionCodeSettings } from "firebase/auth";
+
+const actionCodeSettings: ActionCodeSettings = {
+  url: window.location.origin + '/agendar', // Redirect to appointment page after password reset
+  handleCodeInApp: true,
+  // Add dynamic link domain if you have one configured
+  // dynamicLinkDomain: 'your-domain.page.link'
+};
+
+// Configure auth settings to improve email deliverability
+auth.languageCode = 'pt-BR'; // Set language to Portuguese Brazil
+
+// You can use this actionCodeSettings when sending password reset emails
+export { actionCodeSettings };
+
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
 
