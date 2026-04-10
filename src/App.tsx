@@ -6,7 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import AppointmentPage from "./pages/AppointmentPage.tsx";
+import ChooseTypePage from "./pages/ChooseTypePage.tsx";
+import ClientAppointmentPage from "./pages/ClientAppointmentPage.tsx";
+import OwnerLoginPage from "./pages/OwnerLoginPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
 import CookiePolicy from "./pages/CookiePolicy.tsx";
 
@@ -32,7 +34,10 @@ const App = () => {
           <BrowserRouter basename={basename}>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/agendar" element={<AppointmentPage />} />
+              <Route path="/escolher-tipo" element={<ChooseTypePage />} />
+              <Route path="/cliente" element={<ClientAppointmentPage />} />
+              <Route path="/proprietario" element={<OwnerLoginPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/agendamentos" element={<AdminPage />} />
               <Route path="/politica-cookies" element={<CookiePolicy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { appointmentsService } from "@/services/appointmentsService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TimeSlotSelectorProps {
   selectedDate: string;
@@ -56,6 +57,7 @@ const isPastTime = (date: string, time: string): boolean => {
 const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [reservedSlots, setReservedSlots] = useState<string[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     setTimeSlots(generateTimeSlots());
@@ -65,9 +67,15 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect }: TimeSlot
     if (selectedDate) {
       loadReservedSlots();
     }
-  }, [selectedDate]);
+  }, [selectedDate, user]);
 
   const loadReservedSlots = async () => {
+    // Apenas usuários logados podem ver horários reservados (por segurança)
+    if (!user) {
+      setReservedSlots([]);
+      return;
+    }
+
     try {
       const reserved = await appointmentsService.getReservedSlots(selectedDate);
       setReservedSlots(reserved);
@@ -103,6 +111,7 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect }: TimeSlot
         <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900">
             <span className="font-semibold">{availableCount}</span> horários disponíveis em <span className="font-semibold">{new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+            {!user && <span className="block text-xs mt-1">💡 Reserve seu horário - verificaremos disponibilidade no momento do agendamento</span>}
           </p>
         </div>
 

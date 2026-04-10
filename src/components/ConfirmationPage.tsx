@@ -8,6 +8,7 @@ interface ConfirmationPageProps {
   appointmentData: {
     name: string;
     phone: string;
+    cpf?: string;
     email: string;
     date: string;
     time: string;
@@ -49,6 +50,12 @@ const ConfirmationPage = ({ appointmentData, onNewAppointment }: ConfirmationPag
                     {appointmentData.phone}
                   </p>
                 </div>
+                {appointmentData.cpf && (
+                  <div>
+                    <p className="text-sm text-gray-600">CPF</p>
+                    <p className="font-medium text-gray-900">{appointmentData.cpf}</p>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <p className="text-sm text-gray-600">Email</p>
                   <p className="font-medium text-gray-900">{appointmentData.email}</p>

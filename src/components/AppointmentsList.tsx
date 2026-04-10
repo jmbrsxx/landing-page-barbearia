@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Trash2, Calendar, Clock, User, Phone, Loader } from "lucide-react";
+import DatePicker from "@/components/DatePicker";
 import { appointmentsService } from "@/services/appointmentsService";
 
 interface Appointment {
   id: string;
   name: string;
   phone: string;
+  cpf?: string;
   email: string;
   date: string;
   time: string;
@@ -113,11 +115,11 @@ const AppointmentsList = () => {
 
       <div>
         <label className="text-sm font-medium">Filtrar por Data:</label>
-        <input
-          type="date"
+        <DatePicker
           value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="mt-2 p-2 border rounded-lg w-full md:w-64"
+          onChange={setSelectedDate}
+          placeholder="Selecione uma data"
+          className="mt-2"
         />
         {selectedDate && (
           <button
@@ -160,6 +162,9 @@ const AppointmentsList = () => {
                           {appointment.phone}
                         </a>
                       </p>
+                      {appointment.cpf && (
+                        <p className="text-sm text-gray-600">CPF: {appointment.cpf}</p>
+                      )}
                       <p className="text-sm text-gray-600">{appointment.email}</p>
                     </div>
                   </div>
@@ -168,7 +173,7 @@ const AppointmentsList = () => {
                     <div>
                       <p className="text-xs text-gray-500 uppercase">Data e Hora</p>
                       <p className="font-semibold flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="w-4 h-4 text-slate-400" />
                         {new Date(appointment.date + "T00:00:00").toLocaleDateString("pt-BR")}
                       </p>
                       <p className="text-sm flex items-center gap-2 text-gray-600">

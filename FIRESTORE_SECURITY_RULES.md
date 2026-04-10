@@ -33,18 +33,18 @@ Se você já tem regras configuradas mas ainda vê o erro, atualize suas regras 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir leitura e escrita de agendamentos apenas para usuários autenticados
+    // Regras para agendamentos
     match /appointments/{document=**} {
-      // Usuários autenticados podem criar novos agendamentos
-      allow create: if request.auth != null;
+      // Qualquer pessoa pode criar agendamentos (clientes não logados)
+      allow create: if true;
 
-      // Usuários autenticados podem ler todos os agendamentos (para painel admin)
+      // Apenas usuários autenticados podem ler agendamentos (painel admin)
       allow read: if request.auth != null;
 
-      // Usuários autenticados podem atualizar qualquer agendamento (para painel admin)
+      // Apenas usuários autenticados podem atualizar agendamentos (painel admin)
       allow update: if request.auth != null;
 
-      // Usuários autenticados podem deletar qualquer agendamento (para painel admin)
+      // Apenas usuários autenticados podem deletar agendamentos (painel admin)
       allow delete: if request.auth != null;
     }
   }

@@ -3,9 +3,10 @@ import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 
 export interface AppointmentData {
-  userId: string;
+  userId: string | null;
   name: string;
   phone: string;
+  cpf?: string;
   email: string;
   date: string;
   time: string;

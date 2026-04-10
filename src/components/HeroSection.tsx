@@ -52,7 +52,7 @@ const HeroSection = () => {
             Experiência premium em corte masculino. Tradição, estilo e precisão em cada detalhe.
           </p>
           <Link
-            to="/agendar"
+            to="/escolher-tipo"
             className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity"
           >
             Agendar Horário
