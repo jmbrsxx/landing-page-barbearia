@@ -268,7 +268,7 @@ const ClientAppointmentPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-gray-600">Qual(is) serviço(s) deseja realizar com {selectedBarber?.name}?</p>
+                <p className="text-gray-600">Quais serviços deseja realizar com {selectedBarber?.name}?</p>
 
                 {services.length === 0 ? (
                   <p className="text-center py-8 text-gray-600">Nenhum serviço disponível</p>
@@ -277,7 +277,7 @@ const ClientAppointmentPage = () => {
                     {services.map((service) => (
                       <label
                         key={service.id}
-                        className="group flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                        className="group flex items-start gap-3 p-4 border rounded-lg bg-white hover:bg-primary/10 cursor-pointer transition"
                       >
                         <Checkbox
                           checked={selectedServices.includes(service.id)}
@@ -287,7 +287,7 @@ const ClientAppointmentPage = () => {
                           className="mt-1"
                         />
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800 transition-colors group-hover:text-gray-950">
+                          <p className="font-semibold text-gray-500 transition-colors group-hover:text-primary">
                             {service.name}
                           </p>
                           <p className="text-sm text-gray-600">
@@ -458,9 +458,8 @@ const ClientAppointmentPage = () => {
           <CardContent className="flex gap-2 justify-between pt-6 border-t mt-6 pb-6">
             <Button
               variant="outline"
-              onClick={handlePrevStep}
+              onClick={() => (step === 1 ? navigate("/") : handlePrevStep())}
               className="flex items-center gap-2"
-              disabled={step === 1}
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar

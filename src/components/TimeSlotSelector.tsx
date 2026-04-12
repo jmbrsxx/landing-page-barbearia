@@ -128,8 +128,8 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, reservedSl
                   isDisabled
                     ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
                     : isSelected
-                    ? "bg-green-600 border-green-700 text-white shadow-lg"
-                    : "bg-white border-gray-300 text-gray-700 hover:border-green-400 hover:bg-green-50 cursor-pointer"
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                    : "bg-white border-primary/20 text-primary hover:border-primary hover:bg-primary/10 cursor-pointer"
                 )}
               >
                 {slot}
