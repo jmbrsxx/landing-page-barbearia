@@ -47,16 +47,16 @@ const DatePicker = ({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal bg-background hover:bg-background",
+            "w-full justify-start text-left font-normal bg-background hover:bg-primary/10 border-primary/70 text-primary",
             !value && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
           {displayDate}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 border border-border bg-background shadow-lg" align="start">
         <Calendar
           mode="single"
           selected={currentDate}

@@ -4,18 +4,14 @@ import { useNavigate } from "react-router-dom";
 import {
   signInWithPopup,
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
   sendPasswordResetEmail,
-  signOut,
 } from "firebase/auth";
 import { auth, actionCodeSettings } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Chrome, Mail, X } from "lucide-react";
 
 interface AuthModalProps {
@@ -31,8 +27,8 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [authMode, setAuthMode] = useState<"google" | "email">("google");
 
   useEffect(() => {
     setMounted(true);
@@ -56,42 +52,6 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
     }
   };
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
-
-    if (password !== confirmPassword) {
-      setError("As senhas não conferem");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      if (userCredential.user) {
-        await sendEmailVerification(userCredential.user);
-        await signOut(auth);
-      }
-      setMessage("Conta criada com sucesso! Verifique seu email para ativar a conta.");
-      setPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      if (err.code === "auth/email-already-in-use") {
-        setError("Este email já está cadastrado. Faça login ou recupere sua senha.");
-      } else {
-        setError(err.message || "Erro ao criar conta");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handlePasswordReset = async () => {
     if (!email) {
       setError("Digite seu email para recuperar a conta.");
@@ -102,25 +62,18 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
       setIsLoading(true);
       setError(null);
       setMessage(null);
-      console.log("Iniciando recuperação de senha para:", email);
-      console.log("Auth configurado:", auth);
-      console.log("ActionCodeSettings:", actionCodeSettings);
-      const result = await sendPasswordResetEmail(auth, email, actionCodeSettings);
-      console.log("Email de recuperação enviado com sucesso!", result);
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setMessage("✓ Email enviado com sucesso! Verifique sua caixa de entrada e pasta de spam.");
       setEmail("");
     } catch (err: any) {
-      console.error("Erro completo:", err);
-      console.error("Código de erro:", err.code);
-      console.error("Mensagem de erro:", err.message);
       if (err.code === "auth/user-not-found") {
-        setError("❌ Este email não tem uma conta registrada. Crie uma conta primeiro.");
+        setError("Este email não tem uma conta registrada.");
       } else if (err.code === "auth/invalid-email") {
-        setError("❌ Email inválido. Digite um email válido.");
+        setError("Email inválido. Digite um email válido.");
       } else if (err.code === "auth/too-many-requests") {
-        setError("❌ Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+        setError("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
       } else {
-        setError(`❌ Erro: ${err.code || "desconhecido"} - ${err.message || "Não foi possível enviar o email de recuperação. Tente novamente."}`);
+        setError(err.message || "Não foi possível enviar o email de recuperação.");
       }
     } finally {
       setIsLoading(false);
@@ -134,19 +87,13 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
     try {
       setIsLoading(true);
       setError(null);
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      if (!credential.user.emailVerified) {
-        await sendEmailVerification(credential.user);
-        await signOut(auth);
-        setError("Email não verificado. Enviamos um novo email de verificação.");
-        return;
-      }
+      await signInWithEmailAndPassword(auth, email, password);
       onAuthSuccess();
     } catch (err: any) {
       if (err.code === "auth/wrong-password") {
         setError("Senha incorreta. Verifique e tente novamente.");
       } else if (err.code === "auth/user-not-found") {
-        setError("Email não encontrado. Crie uma conta ou recupere sua senha.");
+        setError("Email não encontrado. Verifique e tente novamente.");
       } else {
         setError(err.message || "Erro ao fazer login");
       }
@@ -161,7 +108,7 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
       <Card className="relative w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <CardHeader className="relative">
-          <CardTitle className="text-center">Autenticação Necessária</CardTitle>
+          <CardTitle className="text-center">Login</CardTitle>
           {onClose && (
             <Button
               variant="ghost"
@@ -186,16 +133,28 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
             </div>
           )}
 
-          <Tabs defaultValue="google" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="google">Google</TabsTrigger>
-              <TabsTrigger value="email">Email</TabsTrigger>
-            </TabsList>
+          {/* Opção entre Google e Email */}
+          <div className="flex gap-2">
+            <Button
+              variant={authMode === "google" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setAuthMode("google")}
+            >
+              Google
+            </Button>
+            <Button
+              variant={authMode === "email" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setAuthMode("email")}
+            >
+              Email
+            </Button>
+          </div>
 
-            {/* Google Sign In */}
-            <TabsContent value="google" className="space-y-4">
+          {authMode === "google" && (
+            <div className="space-y-4">
               <p className="text-sm text-gray-600 text-center">
-                Entre ou crie uma conta com sua conta Google para continuar com o agendamento.
+                Faça login com sua conta Google para continuar.
               </p>
               <Button
                 onClick={handleGoogleSignIn}
@@ -215,106 +174,51 @@ const AuthModal = ({ onAuthSuccess, onClose, showBackToHome = false }: AuthModal
                   Voltar ao Início
                 </Button>
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            {/* Email Sign Up/In */}
-            <TabsContent value="email" className="space-y-4">
-              <form onSubmit={handleEmailSignUp} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm sua senha"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex items-center gap-2"
-                >
-                  <Mail className="w-4 h-4" />
-                  {isLoading ? "Criando conta..." : "Criar Conta"}
-                </Button>
-              </form>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300"></span>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">ou</span>
-                </div>
+          {authMode === "email" && (
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <div>
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                />
               </div>
-
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
-                <div>
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="login-password">Senha</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Sua senha"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full"
-                  variant="outline"
+              <div>
+                <Label htmlFor="login-password">Senha</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Sua senha"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? "Entrando..." : "Entrar"}
+              </Button>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  className="text-sm text-primary underline"
                 >
-                  {isLoading ? "Entrando..." : "Entrar"}
-                </Button>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handlePasswordReset}
-                    className="text-sm text-primary underline"
-                  >
-                    Esqueci minha senha
-                  </button>
-                </div>
-              </form>
-            </TabsContent>
-          </Tabs>
+                  Esqueci minha senha
+                </button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

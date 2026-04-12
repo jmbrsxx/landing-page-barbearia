@@ -47,9 +47,77 @@ service cloud.firestore {
       // Apenas usuários autenticados podem deletar agendamentos (painel admin)
       allow delete: if request.auth != null;
     }
+
+    // Regras para barbeiros (NOVO - necessário para agendamento funcionar)
+    match /barbers/{document=**} {
+      // Qualquer pessoa pode ver barbeiros (clientes precisam escolher)
+      allow read: if true;
+
+      // Apenas usuários autenticados podem gerenciar barbeiros (admin)
+      allow write: if request.auth != null;
+    }
+
+    // Regras para serviços (NOVO - necessário para agendamento funcionar)
+    match /services/{document=**} {
+      // Qualquer pessoa pode ver serviços (clientes precisam escolher)
+      allow read: if true;
+
+      // Apenas usuários autenticados podem gerenciar serviços (admin)
+      allow write: if request.auth != null;
+    }
   }
 }
 ```
+
+### 4. Clique em **Publish**
+- Aguarde a publicação das regras
+- Agora o sistema deve funcionar sem erros de permissões
+
+## 🔍 Verificando se funcionou
+
+Após publicar as regras:
+
+1. **Recarregue a página** do cliente (`/cliente`)
+2. **Abra o console** (F12)
+3. **Procure por erros** - não deve haver mais "Missing or insufficient permissions"
+4. **Teste o agendamento** - deve aparecer barbeiros e serviços
+
+## 🚨 Se ainda não funcionar
+
+### Possível problema: Collection names
+Verifique se as collections no Firestore têm exatamente estes nomes:
+- `barbers` (não `barbeiros`)
+- `services` (não `servicos`)
+- `appointments` (não `agendamentos`)
+
+### Possível problema: Autenticação
+Certifique-se de que você está logado no Firebase Auth quando acessa o painel admin.
+
+### Possível problema: Regras não publicadas
+As regras só funcionam após clicar em **Publish**. Se você editou mas não publicou, elas não valem.
+
+## 📝 Notas importantes
+
+- **Leitura pública**: Barbeiros e serviços podem ser lidos por qualquer pessoa (necessário para clientes agendarem)
+- **Escrita protegida**: Só usuários logados podem criar/editar/deletar barbeiros e serviços
+- **Test mode**: Para desenvolvimento, você pode usar "test mode" que permite tudo por 30 dias
+- **Produção**: Em produção, use regras mais restritivas baseadas em roles de usuário
+
+## 🔧 Troubleshooting
+
+### Erro: "Missing or insufficient permissions" continua
+1. Verifique se publicou as regras
+2. Recarregue a página completamente (Ctrl+F5)
+3. Limpe cache do navegador
+4. Tente em modo incógnito
+
+### Erro: "Collection not found"
+- As collections são criadas automaticamente quando você adiciona o primeiro documento
+- Adicione um barbeiro e serviço via painel admin para criar as collections
+
+### Erro: "Auth required" no painel admin
+- Certifique-se de estar logado no Firebase Auth
+- Acesse `/admin?key=admin2024` primeiro para fazer login
 
 ### 4. Publique as regras
 - Clique no botão **Publish** (azul)

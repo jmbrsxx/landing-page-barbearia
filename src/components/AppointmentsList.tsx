@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Trash2, Calendar, Clock, User, Phone, Loader } from "lucide-react";
 import DatePicker from "@/components/DatePicker";
-import { appointmentsService } from "@/services/appointmentsService";
+import { appointmentsService, Barber, Service } from "@/services/appointmentsService";
 
 interface Appointment {
   id: string;
@@ -14,6 +14,7 @@ interface Appointment {
   email: string;
   date: string;
   time: string;
+  barberId: string;
   services: string[];
   notes: string;
   status: string;
@@ -26,14 +27,44 @@ const AppointmentsList = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [barbers, setBarbers] = useState<Map<string, string>>(new Map()); // barberId -> barberName
+  const [services, setServices] = useState<Map<string, Service>>(new Map()); // serviceId -> service
 
   useEffect(() => {
     loadAppointments();
+    loadBarbers();
+    loadServices();
   }, []);
 
   useEffect(() => {
     filterAppointments();
   }, [appointments, selectedDate]);
+
+  const loadBarbers = async () => {
+    try {
+      const barbersData = await appointmentsService.getBarbers();
+      const barberMap = new Map<string, string>();
+      barbersData.forEach((barber: Barber) => {
+        barberMap.set(barber.id, barber.name);
+      });
+      setBarbers(barberMap);
+    } catch (err) {
+      console.error("Erro ao carregar barbeiros:", err);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      const servicesData = await appointmentsService.getServices();
+      const serviceMap = new Map<string, Service>();
+      servicesData.forEach((service: Service) => {
+        serviceMap.set(service.id, service);
+      });
+      setServices(serviceMap);
+    } catch (err) {
+      console.error("Erro ao carregar serviços:", err);
+    }
+  };
 
   const loadAppointments = async () => {
     try {
@@ -148,10 +179,16 @@ const AppointmentsList = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs text-gray-500 uppercase">Nome</p>
+                      <p className="text-xs text-gray-500 uppercase">Cliente</p>
                       <p className="font-semibold flex items-center gap-2">
                         <User className="w-4 h-4" />
                         {appointment.name}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Barbeiro</p>
+                      <p className="font-semibold text-primary">
+                        {barbers.get(appointment.barberId) || "Não especificado"}
                       </p>
                     </div>
                     <div>
@@ -187,11 +224,14 @@ const AppointmentsList = () => {
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-xs text-gray-500 uppercase mb-2">Serviços</p>
                   <div className="flex flex-wrap gap-2">
-                    {appointment.services.map((service) => (
-                      <Badge key={service} variant="secondary">
-                        {service}
-                      </Badge>
-                    ))}
+                    {appointment.services.map((serviceId) => {
+                      const service = services.get(serviceId);
+                      return (
+                        <Badge key={serviceId} variant="secondary">
+                          {service ? service.name : serviceId}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
 
