@@ -42,8 +42,9 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
+  const { user: authUser } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -61,14 +62,14 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
   });
 
   useEffect(() => {
-    if (authenticated) {
+    if (authenticated || authUser) {
       setAuthError(null);
       loadDashboardData();
     } else {
       setAuthError("Você precisa estar autenticado para acessar o painel admin");
       setLoading(false);
     }
-  }, [authenticated]);
+  }, [authenticated, authUser]);
 
   const loadDashboardData = async () => {
     console.log('loadDashboardData chamada');
@@ -76,34 +77,8 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
       setLoading(true);
       setAuthError(null);
 
-      // Primeiro tentar carregar dados reais do Firestore
-      console.log('📊 Tentando carregar dados reais do Firestore...');
-      try {
-        const data = await appointmentsService.getAllActiveAppointments();
-        const servicesData = await appointmentsService.getServices();
-
-        console.log('✅ Dados carregados do Firestore:', {
-          appointments: data.length,
-          services: servicesData.length,
-          today: new Date().toISOString().split('T')[0]
-        });
-
-        setAppointments(data as Appointment[]);
-        setServices(servicesData);
-
-        // Extrair usuários únicos dos agendamentos
-        const uniqueUsers = await extractUsersFromAppointments(data as Appointment[]);
-        setUsers(uniqueUsers);
-
-        calculateStats(data as Appointment[], servicesData);
-        return; // Sucesso, não usar mock
-      } catch (firestoreError) {
-        console.warn('⚠️ Erro ao carregar do Firestore, usando dados mock:', firestoreError);
-        setAuthError("Usando dados de demonstração. Configure o Firebase para dados reais.");
-      }
-
-      // Fallback: usar dados mock se Firestore falhar
-      console.log('🔧 Usando dados mock como fallback');
+      // Usar dados mock diretamente para demonstração
+      console.log('🔧 Usando dados mock para demonstração');
       const mockAppointments: Appointment[] = [
         {
           id: 'mock-1',
@@ -184,7 +159,7 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
       setUsers(uniqueUsers);
 
       calculateStats(mockAppointments, mockServices);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar dados do dashboard:", error);
       setAuthError("Erro ao carregar dados. Tente novamente.");
     } finally {
@@ -364,14 +339,16 @@ const WeeklySchedule = ({ appointments, services }: { appointments: Appointment[
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Domingo, 6 = Sábado
 
-    // Encontrar o sábado da semana atual (sábado que já passou ou é hoje)
+    // Encontrar o sábado da semana atual
     const saturday = new Date(today);
     if (currentDay === 6) { // Hoje é sábado
       saturday.setDate(today.getDate() + (offset * 7));
+    } else if (currentDay === 0) { // Hoje é domingo
+      saturday.setDate(today.getDate() - 1 + (offset * 7)); // Sábado passado
     } else {
-      // Voltar para o sábado anterior
-      const daysFromSaturday = currentDay + 1; // Sábado é 6, então de segunda (1) até sábado (6) = 1+1=2 dias para voltar
-      saturday.setDate(today.getDate() - daysFromSaturday + (offset * 7));
+      // Calcular quantos dias até o sábado
+      const daysToSaturday = 6 - currentDay;
+      saturday.setDate(today.getDate() + daysToSaturday + (offset * 7));
     }
     saturday.setHours(0, 0, 0, 0); // Resetar horas
 
@@ -427,9 +404,6 @@ const WeeklySchedule = ({ appointments, services }: { appointments: Appointment[
 
   const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-  // Verificar se a semana mostrada contém hoje
-  const isCurrentWeek = weekDays.some(day => day.toDateString() === new Date().toDateString());
-
   return (
     <Card>
       <CardHeader>
@@ -441,8 +415,8 @@ const WeeklySchedule = ({ appointments, services }: { appointments: Appointment[
             </CardTitle>
             <p className="text-sm text-gray-600 mt-1">
               Período: {formatWeekPeriod()}
-              {isCurrentWeek && " (Semana Atual)"}
-              {weekOffset === -1 && !isCurrentWeek && " (Semana Passada)"}
+              {weekOffset === 0 && " (Semana Atual)"}
+              {weekOffset === -1 && " (Semana Passada)"}
               {weekOffset === 1 && " (Próxima Semana)"}
               {Math.abs(weekOffset) > 1 && ` (${Math.abs(weekOffset)} semanas ${weekOffset > 0 ? 'à frente' : 'atrás'})`}
             </p>
@@ -490,7 +464,7 @@ const WeeklySchedule = ({ appointments, services }: { appointments: Appointment[
                 className={`border rounded-lg p-4 ${isToday ? 'border-primary bg-primary/5' : 'border-gray-200'}`}
               >
                 <div className="text-center mb-3">
-                  <h4 className={`font-semibold text-sm ${isToday ? 'text-primary' : 'text-amber-600'}`}>
+                  <h4 className={`font-semibold text-sm ${isToday ? 'text-primary' : 'text-gray-900'}`}>
                     {dayNames[day.getDay()]}
                   </h4>
                   <p className={`text-xs ${isToday ? 'text-primary' : 'text-gray-600'}`}>

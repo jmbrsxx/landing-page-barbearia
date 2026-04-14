@@ -1,4 +1,5 @@
 import { MapPin, Clock, Phone, Instagram } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const ContactSection = () => {
@@ -50,14 +51,12 @@ const ContactSection = () => {
         </div>
 
         <div className={`text-center mt-12 transition-all duration-700 delay-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          <a
-            href="https://wa.me/5551999999999"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            Agendar pelo WhatsApp
-          </a>
+          <Link to="/cliente">
+            <button className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity">
+              <Phone className="w-4 h-4" />
+              Agendar Horário
+            </button>
+          </Link>
         </div>
       </div>
     </section>

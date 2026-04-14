@@ -65,6 +65,21 @@ service cloud.firestore {
       // Apenas usuários autenticados podem gerenciar serviços (admin)
       allow write: if request.auth != null;
     }
+
+    // Regras para perfis de usuário (NOVO - necessário para salvar dados do usuário)
+    match /userProfiles/{document=**} {
+      // Usuários autenticados podem ler todos os perfis (para painel admin)
+      allow read: if request.auth != null;
+
+      // Usuários podem escrever apenas seu próprio perfil
+      allow write: if request.auth != null && request.auth.uid == resource.id;
+
+      // Usuários podem criar seu próprio perfil
+      allow create: if request.auth != null && request.auth.uid == request.resource.id;
+
+      // Usuários podem deletar apenas seu próprio perfil (NECESSÁRIO para exclusão de conta)
+      allow delete: if request.auth != null && request.auth.uid == resource.id;
+    }
   }
 }
 ```

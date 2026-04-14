@@ -61,46 +61,54 @@ const AdminPage = () => {
 
   // Verificar se há um token válido na URL ou no localStorage
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const keyFromUrl = params.get("key");
+    const checkAccess = async () => {
+      const params = new URLSearchParams(location.search);
+      const keyFromUrl = params.get("key");
 
-    // Verificar localStorage
-    const storedAccess = localStorage.getItem("adminAccess");
-    const expiresAt = localStorage.getItem("adminAccessExpires");
+      // Verificar localStorage
+      const storedAccess = localStorage.getItem("adminAccess");
+      const expiresAt = localStorage.getItem("adminAccessExpires");
 
-    // Se houver chave na URL
-    if (keyFromUrl) {
-      if (keyFromUrl === ADMIN_ACCESS_KEY) {
-        localStorage.setItem("adminAccess", "true");
-        // Acesso válido por 24 horas
-        localStorage.setItem(
-          "adminAccessExpires",
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        );
-        setHasValidAccess(true);
-        // Limpar a URL
-        window.history.replaceState(null, "", "/admin");
-      } else {
-        setError("Chave de acesso inválida");
+      // Se houver chave na URL
+      if (keyFromUrl) {
+        if (keyFromUrl === ADMIN_ACCESS_KEY) {
+          // Apenas definir acesso sem login (usando dados mock)
+          localStorage.setItem("adminAccess", "true");
+          // Acesso válido por 24 horas
+          localStorage.setItem(
+            "adminAccessExpires",
+            new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          );
+          setHasValidAccess(true);
+          // Limpar a URL
+          window.history.replaceState(null, "", "/admin");
+        } else {
+          setError("Chave de acesso inválida");
+        }
       }
-    }
-    // Se houve acesso anterior no localStorage
-    else if (storedAccess === "true" && expiresAt) {
-      const expiration = new Date(expiresAt);
-      if (new Date() < expiration) {
-        setHasValidAccess(true);
-      } else {
-        localStorage.removeItem("adminAccess");
-        localStorage.removeItem("adminAccessExpires");
+      // Se houve acesso anterior no localStorage
+      else if (storedAccess === "true" && expiresAt) {
+        const expiration = new Date(expiresAt);
+        if (new Date() < expiration) {
+          setHasValidAccess(true);
+        } else {
+          localStorage.removeItem("adminAccess");
+          localStorage.removeItem("adminAccessExpires");
+        }
       }
-    }
+    };
+
+    checkAccess();
   }, [location]);
 
-  const handleAccessSubmit = (e: React.FormEvent) => {
+  const handleAccessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (accessKey === ADMIN_ACCESS_KEY) {
+      // Conceder acesso diretamente sem autenticação Firebase
+      console.log('🔐 Acesso admin concedido com código válido');
+
       localStorage.setItem("adminAccess", "true");
       localStorage.setItem(
         "adminAccessExpires",
@@ -325,7 +333,7 @@ const AdminPage = () => {
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
-            <AdminDashboard />
+            <AdminDashboard authenticated={true} />
           </TabsContent>
 
           {/* Appointments Tab */}

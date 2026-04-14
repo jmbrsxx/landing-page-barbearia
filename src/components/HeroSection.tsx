@@ -51,12 +51,20 @@ const HeroSection = () => {
           <p className="text-foreground/70 text-base md:text-lg max-w-xl mx-auto mb-10 font-light leading-relaxed">
             Experiência premium em corte masculino. Tradição, estilo e precisão em cada detalhe.
           </p>
-          <Link
-            to="/cliente"
-            className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            Agendar Horário
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              to="/cliente"
+              className="inline-flex items-center gap-2 gold-gradient text-primary-foreground px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity"
+            >
+              Agendar Horário
+            </Link>
+            <Link
+              to="/cliente/dashboard"
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-sm font-body font-semibold text-sm uppercase tracking-widest hover:bg-white/20 transition-all"
+            >
+              Ver meus agendamentos
+            </Link>
+          </div>
         </div>
       </div>
 

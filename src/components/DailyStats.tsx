@@ -2,35 +2,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Users, TrendingUp, Calendar } from "lucide-react";
+import { Service } from "@/services/appointmentsService";
 
 interface DailyStatsProps {
   appointments: any[];
+  services: Service[];
 }
 
-const DailyStats = ({ appointments }: DailyStatsProps) => {
+const DailyStats = ({ appointments, services }: DailyStatsProps) => {
   // Calcular estatísticas do dia atual
   const today = new Date().toISOString().split('T')[0];
-  const todayAppointments = appointments.filter(apt => apt.date === today);
+  const todayAppointments = appointments.filter(apt => apt.status !== "cancelled" && apt.date === today);
 
-  // Horários de funcionamento (8h às 18h = 10 horas = 600 minutos)
-  const workingMinutes = 600;
-  const occupiedMinutes = todayAppointments.length * 45; // 45 min por serviço
-  const occupancyRate = Math.min((occupiedMinutes / workingMinutes) * 100, 100);
+  // Calcular preços a partir da lista de serviços cadastrados
+  const servicePriceMap = services.reduce((map, service) => {
+    map[service.id] = service.price;
+    return map;
+  }, {} as Record<string, number>);
 
-  // Calcular receita de hoje
-  const servicePrices: { [key: string]: number } = {
-    "Corte Masculino": 50,
-    "Barba Completa": 35,
-    "Corte + Barba": 75,
-    "Tratamento Capilar": 60
+  const getAppointmentRevenue = (apt: any) => {
+    return apt.services.reduce((serviceTotal: number, serviceId: string) => {
+      return serviceTotal + (servicePriceMap[serviceId] || 0);
+    }, 0);
   };
 
   const todayRevenue = todayAppointments.reduce((total, apt) => {
-    const appointmentRevenue = apt.services.reduce((serviceTotal: number, service: string) => {
-      return serviceTotal + (servicePrices[service] || 0);
-    }, 0);
-    return total + appointmentRevenue;
+    return total + getAppointmentRevenue(apt);
   }, 0);
+
+  // Horários de funcionamento (8h às 18h = 10 horas = 600 minutos)
+  const workingMinutes = 600;
+  const occupiedMinutes = todayAppointments.reduce((total: number, apt) => {
+    const appointmentDuration = apt.services.reduce((sum: number, serviceId: string) => {
+      const service = services.find((serviceItem) => serviceItem.id === serviceId);
+      return sum + (service?.estimatedTime || 45);
+    }, 0);
+    return total + appointmentDuration;
+  }, 0);
+  const occupancyRate = Math.min((occupiedMinutes / workingMinutes) * 100, 100);
 
   // Estatísticas por horário
   const hourlyStats = Array.from({ length: 11 }, (_, i) => {

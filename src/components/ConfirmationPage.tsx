@@ -10,6 +10,7 @@ interface ConfirmationPageProps {
     phone: string;
     cpf?: string;
     email: string;
+    barber: string;
     date: string;
     time: string;
     services: string[];
@@ -60,6 +61,15 @@ const ConfirmationPage = ({ appointmentData, onNewAppointment }: ConfirmationPag
                   <p className="text-sm text-gray-600">Email</p>
                   <p className="font-medium text-gray-900">{appointmentData.email}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Barber Info */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Profissional</h3>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-gray-600">Barbeiro</p>
+                <p className="font-medium text-lg text-gray-900">{appointmentData.barber}</p>
               </div>
             </div>
 

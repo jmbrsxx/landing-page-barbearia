@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ClientAppointmentPage from "./pages/ClientAppointmentPage.tsx";
+import ClientDashboard from "./pages/ClientDashboard.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
 import CookiePolicy from "./pages/CookiePolicy.tsx";
 
@@ -33,6 +34,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/cliente" element={<ClientAppointmentPage />} />
+              <Route path="/cliente/dashboard" element={<ClientDashboard />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/agendamentos" element={<AdminPage />} />
               <Route path="/politica-cookies" element={<CookiePolicy />} />

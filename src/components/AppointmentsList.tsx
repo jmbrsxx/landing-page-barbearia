@@ -17,7 +17,7 @@ interface Appointment {
   barberId: string;
   services: string[];
   notes: string;
-  status: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   createdAt: any;
 }
 
@@ -70,13 +70,23 @@ const AppointmentsList = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await appointmentsService.getAllConfirmedAppointments();
+      const data = await appointmentsService.getAllActiveAppointments();
       setAppointments(data as Appointment[]);
     } catch (err: any) {
       setError(err.message || "Erro ao carregar agendamentos");
       console.error("Erro ao carregar agendamentos:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCompleteAppointment = async (id: string) => {
+    try {
+      await appointmentsService.updateAppointmentStatus(id, "completed");
+      await loadAppointments();
+    } catch (err: any) {
+      alert("Erro ao marcar como concluído: " + err.message);
+      console.error(err);
     }
   };
 
@@ -140,7 +150,7 @@ const AppointmentsList = () => {
         <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
         <div>
           <p className="font-semibold text-blue-900">Total de Agendamentos</p>
-          <p className="text-sm text-blue-700">{appointments.length} consultas confirmadas</p>
+          <p className="text-sm text-blue-700">{appointments.length} consultas ativas</p>
         </div>
       </div>
 
@@ -242,18 +252,38 @@ const AppointmentsList = () => {
                   </div>
                 )}
 
-                <div className="mt-4 flex justify-between items-center">
-                  <Badge className="bg-green-600 text-white border-green-700">
-                    {appointment.status === "confirmed" ? "Confirmado" : "Cancelado"}
+                <div className="mt-4 flex flex-col md:flex-row md:justify-between gap-3 items-start md:items-center">
+                  <Badge className={`${
+                    appointment.status === "completed" ? "bg-green-600 text-white border-green-700" :
+                    appointment.status === "confirmed" ? "bg-blue-600 text-white border-blue-700" :
+                    appointment.status === "pending" ? "bg-yellow-600 text-white border-yellow-700" :
+                    "bg-gray-600 text-white border-gray-700"
+                  }`}>
+                    {appointment.status === "completed" ? "Concluído" :
+                     appointment.status === "confirmed" ? "Confirmado" :
+                     appointment.status === "pending" ? "Pendente" :
+                     "Cancelado"}
                   </Badge>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteAppointment(appointment.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Cancelar
-                  </Button>
+
+                  <div className="flex flex-wrap gap-2">
+                    {appointment.status !== "completed" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCompleteAppointment(appointment.id)}
+                      >
+                        Concluir
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteAppointment(appointment.id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
