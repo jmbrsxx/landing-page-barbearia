@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { appointmentsService, Barber, BarberSchedule } from "@/services/appointmentsService";
 import { Clock, RotateCcw, AlertCircle } from "lucide-react";
 
@@ -18,7 +17,10 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newUnavailableDate, setNewUnavailableDate] = useState("");
-  const [newUnavailableTime, setNewUnavailableTime] = useState("");
+  const [newBlockedDate, setNewBlockedDate] = useState("");
+  const [newBlockedTime, setNewBlockedTime] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const dayLabels: { [key: string]: string } = {
     monday: "Segunda-feira",
@@ -115,25 +117,43 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
     });
   };
 
-  const addUnavailableTime = () => {
-    if (!newUnavailableTime || !schedule) return;
-    if (schedule.unavailableTimes?.includes(newUnavailableTime)) {
-      alert("Este horário já está na lista");
+  const getBlockedTimeOptions = (date: string) => {
+    if (!schedule) return [];
+    const selectedDateObj = new Date(`${date}T00:00:00`);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[selectedDateObj.getDay()];
+    const daySchedule = schedule.weekSchedule[dayName];
+
+    if (!daySchedule?.isWorking) {
+      return [];
+    }
+
+    return appointmentsService.generateTimeSlots(daySchedule.startTime, daySchedule.endTime, 30);
+  };
+
+  const addBlockedDateTime = () => {
+    if (!newBlockedDate || !newBlockedTime || !schedule) return;
+    const alreadyBlocked = schedule.unavailableDateTimes?.some((entry) => entry.date === newBlockedDate && entry.time === newBlockedTime);
+    if (alreadyBlocked) {
+      alert("Este horário já está bloqueado para a data selecionada");
       return;
     }
 
     setSchedule({
       ...schedule,
-      unavailableTimes: [...(schedule.unavailableTimes || []), newUnavailableTime],
+      unavailableDateTimes: [...(schedule.unavailableDateTimes || []), { date: newBlockedDate, time: newBlockedTime }],
     });
-    setNewUnavailableTime("");
+    setNewBlockedDate("");
+    setNewBlockedTime("");
   };
 
-  const removeUnavailableTime = (time: string) => {
+  const removeBlockedDateTime = (entryToRemove: { date: string; time: string }) => {
     if (!schedule) return;
     setSchedule({
       ...schedule,
-      unavailableTimes: schedule.unavailableTimes?.filter(t => t !== time) || [],
+      unavailableDateTimes: schedule.unavailableDateTimes?.filter(
+        (entry) => entry.date !== entryToRemove.date || entry.time !== entryToRemove.time
+      ) || [],
     });
   };
 
@@ -146,6 +166,23 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
         [day]: {
           ...schedule.weekSchedule[day],
           [field]: value,
+        },
+      },
+    });
+  };
+
+  const toggleDayWorking = (day: string) => {
+    if (!schedule) return;
+    const currentDay = schedule.weekSchedule[day];
+    if (!currentDay) return;
+
+    setSchedule({
+      ...schedule,
+      weekSchedule: {
+        ...schedule.weekSchedule,
+        [day]: {
+          ...currentDay,
+          isWorking: !currentDay.isWorking,
         },
       },
     });
@@ -290,8 +327,8 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
 
             {/* Datas Indisponíveis */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900">Datas Indisponíveis</h4>
-              <p className="text-sm text-gray-600">Adicione datas específicas em que o barbeiro não estará disponível</p>
+              <h4 className="font-semibold text-amber-900">Datas Indisponíveis</h4>
+              <p className="text-sm text-amber-700">Adicione datas em que o barbeiro não estará disponível para qualquer agendamento.</p>
 
               <div className="flex gap-2">
                 <Input
@@ -299,9 +336,8 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
                   value={newUnavailableDate}
                   onChange={(e) => setNewUnavailableDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  placeholder="Selecione uma data"
                 />
-                <Button onClick={addUnavailableDate} variant="outline" size="sm">
+                <Button onClick={addUnavailableDate} variant="outline" size="sm" disabled={!newUnavailableDate}>
                   Adicionar
                 </Button>
               </div>
@@ -326,34 +362,75 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
               )}
             </div>
 
-            {/* Horários Indisponíveis */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900">Horários Indisponíveis</h4>
-              <p className="text-sm text-gray-600">Adicione horários específicos que não estarão disponíveis em nenhum dia</p>
+              <h4 className="font-semibold text-amber-900">Bloquear horário por data</h4>
+              <p className="text-sm text-amber-700">Selecione um horário em intervalos de 30 minutos para bloquear em uma data específica.</p>
 
-              <div className="flex gap-2">
-                <Input
-                  type="time"
-                  value={newUnavailableTime}
-                  onChange={(e) => setNewUnavailableTime(e.target.value)}
-                  placeholder="Selecione um horário"
-                />
-                <Button onClick={addUnavailableTime} variant="outline" size="sm">
-                  Adicionar
-                </Button>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+                  <Input
+                    type="date"
+                    value={newBlockedDate}
+                    onChange={(e) => {
+                      setNewBlockedDate(e.target.value);
+                      setNewBlockedTime("");
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                  <Button onClick={addBlockedDateTime} variant="outline" size="sm" disabled={!newBlockedDate || !newBlockedTime}>
+                    Bloquear
+                  </Button>
+                </div>
+
+                {newBlockedDate ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto rounded-lg border border-gray-200 p-2 bg-white">
+                    {getBlockedTimeOptions(newBlockedDate).length > 0 ? (
+                      getBlockedTimeOptions(newBlockedDate).map((slot) => {
+                        const isAlreadyBlocked = schedule.unavailableDateTimes?.some(
+                          (entry) => entry.date === newBlockedDate && entry.time === slot
+                        );
+
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            disabled={isAlreadyBlocked}
+                            onClick={() => setNewBlockedTime(slot)}
+                            className={`rounded-lg border px-2 py-2 text-sm text-left transition ${
+                              isAlreadyBlocked
+                                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                                : newBlockedTime === slot
+                                ? "bg-amber-500 text-white border-amber-500"
+                                : "bg-white border-gray-200 text-gray-900 hover:bg-amber-50"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full p-3 text-sm text-gray-500">
+                        Selecione uma data em que o barbeiro trabalhe para ver os horários de 30 em 30 minutos.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Escolha uma data para selecionar o horário a ser bloqueado.</div>
+                )}
               </div>
 
-              {schedule.unavailableTimes && schedule.unavailableTimes.length > 0 && (
+              {schedule.unavailableDateTimes && schedule.unavailableDateTimes.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {schedule.unavailableTimes.map((time) => (
+                  {schedule.unavailableDateTimes.map((entry) => (
                     <div
-                      key={time}
-                      className="flex items-center gap-2 bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm"
+                      key={`${entry.date}-${entry.time}`}
+                      className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm"
                     >
-                      {time}
+                      <span>{new Date(entry.date + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+                      <span>{entry.time}</span>
                       <button
-                        onClick={() => removeUnavailableTime(time)}
-                        className="text-orange-500 hover:text-orange-700"
+                        onClick={() => removeBlockedDateTime(entry)}
+                        className="text-amber-600 hover:text-amber-800"
                       >
                         ×
                       </button>

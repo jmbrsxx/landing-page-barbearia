@@ -88,7 +88,7 @@ const ClientAppointmentPage = () => {
           ...prev,
           name: profile.displayName || user.displayName || prev.name,
           email: profile.email || user.email || prev.email,
-          phone: profile.phone || user.phone || prev.phone,
+          phone: profile.phone || (user as any).phone || prev.phone,
         }));
       } else {
         // Se não houver perfil, usar dados do usuário autenticado
@@ -168,7 +168,7 @@ const ClientAppointmentPage = () => {
       return;
     }
 
-    const finalPhone = userProfile?.phone || user.phone || formData.phone;
+    const finalPhone = userProfile?.phone || (user as any).phone || formData.phone;
     if (!finalPhone) {
       alert("Informe seu telefone para concluir o agendamento.");
       return;
@@ -191,7 +191,6 @@ const ClientAppointmentPage = () => {
           email: user.email || "",
           services: selectedServices,
           notes: formData.notes,
-          status: "booked",
         }
       );
 

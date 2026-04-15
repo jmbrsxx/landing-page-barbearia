@@ -8,7 +8,6 @@ import {
   Users,
   DollarSign,
   Calendar,
-  TrendingUp,
   Clock,
   Star,
   BarChart3,
@@ -95,7 +94,7 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
         const uniqueUsers = await extractUsersFromAppointments(data as Appointment[]);
         setUsers(uniqueUsers);
 
-        calculateStats(data as Appointment[], servicesData);
+        calculateStats(data as Appointment[], servicesData, uniqueUsers);
         return; // Sucesso, não usar mock
       } catch (firestoreError) {
         console.warn('⚠️ Erro ao carregar do Firestore, usando dados mock:', firestoreError);
@@ -183,7 +182,7 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
       const uniqueUsers = await extractUsersFromAppointments(mockAppointments);
       setUsers(uniqueUsers);
 
-      calculateStats(mockAppointments, mockServices);
+      calculateStats(mockAppointments, mockServices, uniqueUsers);
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
       setAuthError("Erro ao carregar dados. Tente novamente.");
@@ -220,7 +219,7 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
     return Array.from(userMap.values());
   };
 
-  const calculateStats = (appointmentsData: Appointment[], serviceList: Service[]) => {
+  const calculateStats = (appointmentsData: Appointment[], serviceList: Service[], uniqueUsers: any[]) => {
     const today = new Date().toISOString().split('T')[0];
     const activeAppointments = appointmentsData.filter(apt => apt.status !== "cancelled");
     const todayAppointments = activeAppointments.filter(apt => apt.date === today);
@@ -252,7 +251,7 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
       weeklyRevenue: totalRevenue * 0.3, // Estimativa semanal
       monthlyRevenue: totalRevenue * 1.2, // Estimativa mensal
       averageRating: 4.8,
-      uniqueClients: users.length,
+      uniqueClients: uniqueUsers.length,
       monthlyGrowth: 15.3
     });
   };
@@ -299,10 +298,6 @@ const AdminDashboard = ({ authenticated = false }: AdminDashboardProps) => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total de Agendamentos</p>
                 <p className="text-3xl font-bold">{stats.totalAppointments}</p>
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  +{stats.monthlyGrowth}% este mês
-                </p>
               </div>
               <Calendar className="w-8 h-8 text-blue-500" />
             </div>

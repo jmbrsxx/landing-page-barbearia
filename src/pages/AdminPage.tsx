@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import AppointmentsList from "@/components/AppointmentsList";
 import AdminDashboard from "@/components/AdminDashboard";
 import BarberScheduleManager from "@/components/BarberScheduleManager";
-import { CalendarCheck, BarChart3, Settings, LogOut, ArrowLeft, Lock, Trash2, Plus, Edit2 } from "lucide-react";
+import { CalendarCheck, BarChart3, Settings, LogOut, ArrowLeft, Lock, Trash2, Plus, Edit2, Users, User, Mail, Phone, Calendar as CalendarIcon, Eye, UserCheck, Clock } from "lucide-react";
 import { appointmentsService, Service, Barber } from "@/services/appointmentsService";
 
 // Defina a chave de acesso aqui - pode ser alterada conforme necessário
@@ -222,6 +224,263 @@ const AdminPage = () => {
     setShowBarberForm(true);
   };
 
+  // ===== COMPONENTE DE GERENCIAMENTO DE CLIENTES =====
+  const ClientsManagement = () => {
+    const [clients, setClients] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedClient, setSelectedClient] = useState<any | null>(null);
+
+    useEffect(() => {
+      loadClients();
+    }, []);
+
+    const loadClients = async () => {
+      try {
+        setLoading(true);
+        // Buscar todos os agendamentos para extrair clientes únicos
+        const appointments = await appointmentsService.getAllActiveAppointments();
+
+        // Extrair clientes únicos dos agendamentos
+        const clientMap = new Map();
+
+        for (const appointment of appointments) {
+          if (appointment.userId && appointment.userId !== 'null' && appointment.userId !== null) {
+            // Tentar buscar perfil do usuário
+            try {
+              const profile = await appointmentsService.getUserProfile(appointment.userId);
+              if (profile) {
+                if (!clientMap.has(appointment.userId)) {
+                  clientMap.set(appointment.userId, {
+                    ...profile,
+                    appointmentsCount: 1,
+                    lastAppointment: appointment.date
+                  });
+                } else {
+                  const existing = clientMap.get(appointment.userId);
+                  existing.appointmentsCount += 1;
+                  if (appointment.date > existing.lastAppointment) {
+                    existing.lastAppointment = appointment.date;
+                  }
+                }
+              }
+            } catch (error) {
+              // Se não conseguir buscar perfil, usar dados do agendamento
+              if (!clientMap.has(appointment.userId)) {
+                clientMap.set(appointment.userId, {
+                  uid: appointment.userId,
+                  displayName: appointment.name,
+                  email: appointment.email,
+                  phone: appointment.phone,
+                  birthDate: '',
+                  howDidYouKnow: '',
+                  appointmentsCount: 1,
+                  lastAppointment: appointment.date,
+                  createdAt: null,
+                  updatedAt: null
+                });
+              } else {
+                const existing = clientMap.get(appointment.userId);
+                existing.appointmentsCount += 1;
+                if (appointment.date > existing.lastAppointment) {
+                  existing.lastAppointment = appointment.date;
+                }
+              }
+            }
+          } else {
+            // Cliente sem conta (agendamento direto)
+            const clientKey = `${appointment.name}-${appointment.phone}`;
+            if (!clientMap.has(clientKey)) {
+              clientMap.set(clientKey, {
+                uid: clientKey,
+                displayName: appointment.name,
+                email: appointment.email,
+                phone: appointment.phone,
+                birthDate: '',
+                howDidYouKnow: '',
+                appointmentsCount: 1,
+                lastAppointment: appointment.date,
+                createdAt: null,
+                updatedAt: null,
+                isGuest: true
+              });
+            } else {
+              const existing = clientMap.get(clientKey);
+              existing.appointmentsCount += 1;
+              if (appointment.date > existing.lastAppointment) {
+                existing.lastAppointment = appointment.date;
+              }
+            }
+          }
+        }
+
+        setClients(Array.from(clientMap.values()));
+      } catch (error) {
+        console.error("Erro ao carregar clientes:", error);
+        setClients([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const filteredClients = clients.filter(client =>
+      client.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.phone?.includes(searchTerm)
+    );
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Clientes Cadastrados
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Gerencie os clientes da sua barbearia
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Barra de Pesquisa */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Buscar por nome, email ou telefone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+
+            {/* Lista de Clientes */}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredClients.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                {searchTerm ? "Nenhum cliente encontrado para a busca." : "Nenhum cliente cadastrado ainda."}
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredClients.map((client) => (
+                  <div
+                    key={client.uid}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-amber-900">{client.displayName}</h4>
+                        {client.isGuest && (
+                          <Badge variant="outline" className="text-xs">Visitante</Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {client.email || "Não informado"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {client.phone || "Não informado"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span>{client.appointmentsCount} agendamento{client.appointmentsCount !== 1 ? 's' : ''}</span>
+                          <span>Último: {new Date(client.lastAppointment + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedClient(client)}
+                      className="flex items-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Detalhes
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Modal de Detalhes do Cliente */}
+        {selectedClient && (
+          <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Detalhes do Cliente
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <User className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg">{selectedClient.displayName}</h3>
+                  {selectedClient.isGuest && (
+                    <Badge variant="outline" className="mt-1">Cliente Visitante</Badge>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm">{selectedClient.email || "Não informado"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm">{selectedClient.phone || "Não informado"}</span>
+                  </div>
+                  {selectedClient.birthDate && (
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">
+                        Nascimento: {new Date(selectedClient.birthDate + "T00:00:00").toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClient.howDidYouKnow && (
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">Como conheceu: {selectedClient.howDidYouKnow}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <CalendarCheck className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm">
+                      {selectedClient.appointmentsCount} agendamento{selectedClient.appointmentsCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm">
+                      Último agendamento: {new Date(selectedClient.lastAppointment + "T00:00:00").toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                  {selectedClient.createdAt && (
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">
+                        Cadastrado em: {new Date(selectedClient.createdAt.seconds * 1000).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    );
+  };
+
   // Se não tem acesso, mostrar formulário
   if (!hasValidAccess) {
     return (
@@ -317,7 +576,7 @@ const AdminPage = () => {
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboard
@@ -325,6 +584,10 @@ const AdminPage = () => {
             <TabsTrigger value="appointments" className="flex items-center gap-2">
               <CalendarCheck className="w-4 h-4" />
               Agendamentos
+            </TabsTrigger>
+            <TabsTrigger value="clients" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Clientes
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -347,6 +610,11 @@ const AdminPage = () => {
                 <AppointmentsList />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Clients Tab */}
+          <TabsContent value="clients" className="space-y-6">
+            <ClientsManagement />
           </TabsContent>
 
           {/* Settings Tab */}

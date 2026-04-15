@@ -5,6 +5,8 @@ import { Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { appointmentsService } from "@/services/appointmentsService";
 
+const EMPTY_RESERVED_SLOTS: string[] = [];
+
 interface TimeSlotSelectorProps {
   selectedDate: string;
   selectedTime: string;
@@ -34,9 +36,17 @@ const generateTimeSlots = () => {
 };
 
 // Verificar se um horário já passou
+const getLocalDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const isPastTime = (date: string, time: string): boolean => {
   const today = new Date();
-  const todayString = today.toISOString().split("T")[0];
+  const todayString = getLocalDateString();
   
   // Se for data anterior a hoje, não importa o horário
   if (date < todayString) {
@@ -55,10 +65,12 @@ const isPastTime = (date: string, time: string): boolean => {
   return false;
 };
 
-const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, reservedSlots = [] }: TimeSlotSelectorProps) => {
+const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, reservedSlots }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [internalReservedSlots, setInternalReservedSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [availabilityReason, setAvailabilityReason] = useState<string | null>(null);
+  const effectiveReservedSlots = reservedSlots ?? EMPTY_RESERVED_SLOTS;
 
   useEffect(() => {
     setTimeSlots(generateTimeSlots());
@@ -70,27 +82,46 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, 
       if (barberId) {
         // Novo sistema: slots específicos do barbeiro
         loadAvailableSlotsForBarber();
-      } else if (reservedSlots && reservedSlots.length > 0) {
+      } else if (effectiveReservedSlots.length > 0) {
         // Compatibilidade: usar prop reservedSlots
-        setInternalReservedSlots(reservedSlots);
+        setInternalReservedSlots(effectiveReservedSlots);
+        setAvailabilityReason(null);
       } else {
         // Fallback: carregar slots gerais (compatibilidade com código antigo)
         loadReservedSlots();
       }
+    } else {
+      setAvailabilityReason(null);
     }
-  }, [selectedDate, barberId, reservedSlots]);
+  }, [selectedDate, barberId, effectiveReservedSlots]);
 
   const loadAvailableSlotsForBarber = async () => {
-    if (!barberId || !selectedDate) return;
+    if (!barberId || !selectedDate) {
+      setLoading(false);
+      setAvailabilityReason('error');
+      setTimeSlots([]);
+      return;
+    }
+
+    setLoading(true);
+    setAvailabilityReason(null);
 
     try {
-      setLoading(true);
-      const availableSlots = await appointmentsService.getAvailableSlots(barberId, selectedDate);
-      setTimeSlots(availableSlots);
-      setInternalReservedSlots([]); // Slots já são filtrados
-    } catch (error) {
+      // Timeout para evitar loading permanente
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('timeout')), 8000);
+      });
+
+      const resultPromise = appointmentsService.getAvailableSlots(barberId, selectedDate);
+      const result = await Promise.race([resultPromise, timeoutPromise]) as { slots: string[], reason?: string };
+
+      setTimeSlots(result.slots);
+      setAvailabilityReason(result.reason || null);
+      setInternalReservedSlots([]);
+    } catch (error: any) {
       console.error("Erro ao carregar slots disponíveis do barbeiro:", error);
       setTimeSlots([]);
+      setAvailabilityReason(error.message === 'timeout' ? 'timeout' : 'error');
     } finally {
       setLoading(false);
     }
@@ -133,6 +164,21 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, 
           <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <p className="text-sm text-gray-600">Carregando horários...</p>
           </div>
+        ) : timeSlots.length === 0 ? (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-900">
+              {availabilityReason === 'day_off' 
+                ? 'O barbeiro está indisponível neste dia (dia de folga)'
+                : availabilityReason === 'all_booked'
+                ? 'Todos os horários estão ocupados para esta data'
+                : availabilityReason === 'timeout'
+                ? 'Timeout ao carregar horários. Tente novamente.'
+                : availabilityReason === 'error'
+                ? 'Erro ao carregar horários. Tente novamente.'
+                : 'Nenhum horário disponível para esta data'
+              }
+            </p>
+          </div>
         ) : (
           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-900">
@@ -142,40 +188,42 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, 
           </div>
         )}
 
-        <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-          {timeSlots.map((slot) => {
-            const isReserved = barberId ? false : internalReservedSlots.includes(slot); // No novo sistema, slots já são filtrados
-            const isPast = isPastTime(selectedDate, slot);
-            const isDisabled = isReserved || isPast;
-            const isSelected = selectedTime === slot;
+        {timeSlots.length > 0 && (
+          <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+            {timeSlots.map((slot) => {
+              const isReserved = barberId ? false : internalReservedSlots.includes(slot); // No novo sistema, slots já são filtrados
+              const isPast = isPastTime(selectedDate, slot);
+              const isDisabled = isReserved || isPast;
+              const isSelected = selectedTime === slot;
 
-            return (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => !isDisabled && onTimeSelect(slot)}
-                disabled={isDisabled}
-                className={cn(
-                  "p-3 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                  isDisabled
-                    ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
-                    : isSelected
-                    ? "bg-primary text-primary-foreground border-primary shadow-lg"
-                    : "bg-white border-primary/20 text-primary hover:border-primary hover:bg-primary/10 cursor-pointer"
-                )}
-              >
-                {slot}
-                {isReserved && <div className="text-xs mt-1">Ocupado</div>}
-                {isPast && !isReserved && <div className="text-xs mt-1">Passado</div>}
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => !isDisabled && onTimeSelect(slot)}
+                  disabled={isDisabled}
+                  className={cn(
+                    "p-3 rounded-lg border-2 font-medium text-sm transition-all duration-200",
+                    isDisabled
+                      ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed opacity-50"
+                      : isSelected
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                      : "bg-white border-primary/20 text-primary hover:border-primary hover:bg-primary/10 cursor-pointer"
+                  )}
+                >
+                  {slot}
+                  {isReserved && <div className="text-xs mt-1">Ocupado</div>}
+                  {isPast && !isReserved && <div className="text-xs mt-1">Passado</div>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {(internalReservedSlots.length > 0 || pastSlots.length > 0) && (
         <div className="text-xs text-gray-500 text-center">
-          {reservedSlots.length > 0 && <div>{reservedSlots.length} horário(s) já reservado(s)</div>}
+          {effectiveReservedSlots.length > 0 && <div>{effectiveReservedSlots.length} horário(s) já reservado(s)</div>}
           {pastSlots.length > 0 && <div>{pastSlots.length} horário(s) já passado(s)</div>}
         </div>
       )}
