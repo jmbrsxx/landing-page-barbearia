@@ -294,7 +294,7 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
                       </div>
 
                       {daySchedule.isWorking && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 sm:mt-0">
                           <div className="flex items-center gap-1">
                             <Label className="text-xs text-gray-600">De:</Label>
                             <Input
@@ -441,11 +441,11 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
             </div>
 
             {/* Botões de Ação */}
-            <div className="flex gap-2 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
               <Button
                 onClick={handleSaveSchedule}
                 disabled={saving}
-                className="flex-1"
+                className="w-full"
               >
                 {saving ? "Salvando..." : "Salvar Horários"}
               </Button>
@@ -453,7 +453,7 @@ const BarberScheduleManager = ({ barbers, onScheduleUpdated }: BarberScheduleMan
                 variant="outline"
                 onClick={handleResetSchedule}
                 disabled={saving}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 w-full"
               >
                 <RotateCcw className="w-4 h-4" />
                 Resetar para Padrão

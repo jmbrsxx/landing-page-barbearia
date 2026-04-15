@@ -366,7 +366,7 @@ const AdminPage = () => {
                 {filteredClients.map((client) => (
                   <div
                     key={client.uid}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors gap-3"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -376,7 +376,7 @@ const AdminPage = () => {
                         )}
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                           <span className="flex items-center gap-1">
                             <Mail className="w-3 h-3" />
                             {client.email || "Não informado"}
@@ -396,7 +396,7 @@ const AdminPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedClient(client)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 w-full sm:w-auto"
                     >
                       <Eye className="w-4 h-4" />
                       Detalhes
@@ -698,7 +698,7 @@ const AdminPage = () => {
                         services.map((service) => (
                           <div
                             key={service.id}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition"
+                            className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition gap-3"
                           >
                             <div className="flex-1">
                               <p className="font-semibold text-gray-900">{service.name}</p>
@@ -706,12 +706,12 @@ const AdminPage = () => {
                                 R$ {service.price.toFixed(2)} • {service.estimatedTime} min
                               </p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEditService(service)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 w-full"
                               >
                                 <Edit2 className="w-4 h-4" />
                                 Editar
@@ -720,7 +720,7 @@ const AdminPage = () => {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => handleDeleteService(service.id)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 w-full"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Deletar
@@ -786,15 +786,15 @@ const AdminPage = () => {
                         barbers.map((barber) => (
                           <div
                             key={barber.id}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition"
+                            className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition gap-3"
                           >
                             <p className="font-semibold text-gray-900">{barber.name}</p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEditBarber(barber)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 w-full"
                               >
                                 <Edit2 className="w-4 h-4" />
                                 Editar
@@ -803,7 +803,7 @@ const AdminPage = () => {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => handleDeleteBarber(barber.id)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 w-full"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Deletar

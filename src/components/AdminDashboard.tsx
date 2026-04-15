@@ -428,52 +428,55 @@ const WeeklySchedule = ({ appointments, services }: { appointments: Appointment[
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Agendamentos da Semana (Sábado a Domingo)
-            </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
-              Período: {formatWeekPeriod()}
-              {isCurrentWeek && " (Semana Atual)"}
-              {weekOffset === -1 && !isCurrentWeek && " (Semana Passada)"}
-              {weekOffset === 1 && " (Próxima Semana)"}
-              {Math.abs(weekOffset) > 1 && ` (${Math.abs(weekOffset)} semanas ${weekOffset > 0 ? 'à frente' : 'atrás'})`}
-            </p>
-            <div className="flex gap-4 text-sm text-gray-600 mt-2">
-              <span>Total: {weekStats.totalAppointments} agendamentos</span>
-              <span>Confirmados: {weekStats.confirmedAppointments}</span>
-              <span>Concluídos: {weekStats.completedAppointments}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekOffset(prev => prev - 1)}
-            >
-              ← Semana Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekOffset(0)}
-              disabled={weekOffset === 0}
-            >
-              Semana Atual
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekOffset(prev => prev + 1)}
-            >
-              Próxima Semana →
-            </Button>
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Agendamentos da Semana (Sábado a Domingo)
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            Período: {formatWeekPeriod()}
+            {isCurrentWeek && " (Semana Atual)"}
+            {weekOffset === -1 && !isCurrentWeek && " (Semana Passada)"}
+            {weekOffset === 1 && " (Próxima Semana)"}
+            {Math.abs(weekOffset) > 1 && ` (${Math.abs(weekOffset)} semanas ${weekOffset > 0 ? 'à frente' : 'atrás'})`}
+          </p>
+          <div className="flex gap-4 text-sm text-gray-600 mt-2">
+            <span>Total: {weekStats.totalAppointments} agendamentos</span>
+            <span>Confirmados: {weekStats.confirmedAppointments}</span>
+            <span>Concluídos: {weekStats.completedAppointments}</span>
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        {/* Botões de navegação da semana - mobile dentro do card */}
+        <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset(prev => prev - 1)}
+            className="w-full sm:w-auto"
+          >
+            ← Semana Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset(0)}
+            disabled={weekOffset === 0}
+            className="w-full sm:w-auto"
+          >
+            Semana Atual
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekOffset(prev => prev + 1)}
+            className="w-full sm:w-auto"
+          >
+            Próxima Semana →
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {weekDays.map((day, index) => {
             const dayAppointments = getAppointmentsForDay(day);
