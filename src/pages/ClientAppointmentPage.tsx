@@ -24,7 +24,6 @@ const ClientAppointmentPage = () => {
   // Dados
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [reservedSlots, setReservedSlots] = useState<string[]>([]);
 
   // Seleções
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
@@ -62,13 +61,6 @@ const ClientAppointmentPage = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  // Carregar horários reservados quando data ou barbeiro mudar
-  useEffect(() => {
-    if (selectedDate && selectedBarber) {
-      loadReservedSlots();
-    }
-  }, [selectedDate, selectedBarber]);
 
   const loadData = async () => {
     try {
@@ -114,16 +106,6 @@ const ClientAppointmentPage = () => {
         name: user.displayName || prev.name,
         email: user.email || prev.email,
       }));
-    }
-  };
-
-  const loadReservedSlots = async () => {
-    if (!selectedBarber) return;
-    try {
-      const slots = await appointmentsService.getReservedSlotsByBarber(selectedBarber.id, selectedDate);
-      setReservedSlots(slots);
-    } catch (err) {
-      console.error("Erro ao carregar horários:", err);
     }
   };
 
@@ -194,21 +176,26 @@ const ClientAppointmentPage = () => {
 
     try {
       setIsSubmitting(true);
-      const appointmentId = await appointmentsService.createAppointment({
-        userId: user.uid,
-        name: user.displayName || user.email || "",
-        phone: finalPhone,
-        cpf: "",
-        email: user.email || "",
-        date: selectedDate,
-        time: selectedTime,
-        barberId: selectedBarber.id,
-        services: selectedServices,
-        notes: formData.notes,
-        status: "confirmed",
-      });
+      setError(null);
 
-      console.log("Agendamento criado:", appointmentId);
+      // 🔥 CRITICAL: Use the new bookAppointment function with all safety rules
+      const appointment = await appointmentsService.bookAppointment(
+        selectedBarber.id,
+        selectedDate,
+        selectedTime,
+        user.uid,
+        {
+          name: user.displayName || user.email || "",
+          phone: finalPhone,
+          cpf: "",
+          email: user.email || "",
+          services: selectedServices,
+          notes: formData.notes,
+          status: "booked",
+        }
+      );
+
+      console.log("✅ Agendamento criado com validações críticas:", appointment);
 
       setConfirmationData({
         name: user.displayName || user.email || "",
@@ -224,6 +211,7 @@ const ClientAppointmentPage = () => {
         notes: formData.notes,
       });
     } catch (error: any) {
+      console.error("❌ Erro crítico no agendamento:", error);
       setError(error.message || "Erro ao criar agendamento");
       alert("Erro ao criar agendamento: " + error.message);
     } finally {
@@ -444,7 +432,7 @@ const ClientAppointmentPage = () => {
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}
                     onTimeSelect={setSelectedTime}
-                    reservedSlots={reservedSlots}
+                    barberId={selectedBarber?.id}
                   />
                 </CardContent>
               </>

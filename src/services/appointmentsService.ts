@@ -15,6 +15,23 @@ export interface Barber {
   name: string;
 }
 
+export interface BarberSchedule {
+  barberId: string;
+  weekSchedule: {
+    [day: string]: {
+      isWorking: boolean;
+      startTime: string; // "08:00"
+      endTime: string; // "18:00"
+    };
+  };
+  breaks?: Array<{
+    startTime: string;
+    endTime: string;
+  }>;
+  unavailableDates?: string[]; // ["2026-04-20"]
+  unavailableTimes?: string[]; // ["12:00", "15:30"]
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -140,11 +157,13 @@ export const appointmentsService = {
     try {
       const q = query(
         collection(db, "appointments"),
-        where("date", "==", date),
-        where("status", "!=", "cancelled")
+        where("date", "==", date)
       );
       const querySnapshot = await getDocs(q);
-      const times = querySnapshot.docs.map((doc) => doc.data().time);
+      const times = querySnapshot.docs
+        .map((doc) => doc.data())
+        .filter((appt: any) => appt.status !== "cancelled")
+        .map((appt: any) => appt.time);
       console.log('✅ Horários reservados encontrados:', times);
       return times;
     } catch (error: any) {
@@ -288,11 +307,13 @@ export const appointmentsService = {
       const q = query(
         collection(db, "appointments"),
         where("barberId", "==", barberId),
-        where("date", "==", date),
-        where("status", "!=", "cancelled")
+        where("date", "==", date)
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => doc.data().time);
+      return querySnapshot.docs
+        .map((doc) => doc.data())
+        .filter((appt: any) => appt.status !== "cancelled")
+        .map((appt: any) => appt.time);
     } catch (error: any) {
       console.error('❌ Erro ao buscar horários reservados do barbeiro:', error);
       throw error;
@@ -447,5 +468,264 @@ export const appointmentsService = {
         estimatedTime: 45
       }
     ];
+  },
+
+  // ===== HORÁRIOS DOS BARBEIROS =====
+  // Obter horários de um barbeiro
+  async getBarberSchedule(barberId: string): Promise<BarberSchedule | null> {
+    try {
+      const scheduleRef = doc(db, "barberSchedules", barberId);
+      const scheduleSnap = await getDoc(scheduleRef);
+
+      if (scheduleSnap.exists()) {
+        return {
+          barberId,
+          ...scheduleSnap.data(),
+        } as BarberSchedule;
+      }
+
+      // Se não existe, retornar horário padrão
+      return this.getDefaultSchedule(barberId);
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar horários do barbeiro:', error);
+      return this.getDefaultSchedule(barberId);
+    }
+  },
+
+  // Obter horário padrão
+  getDefaultSchedule(barberId: string): BarberSchedule {
+    return {
+      barberId,
+      weekSchedule: {
+        'monday': { isWorking: true, startTime: '08:00', endTime: '18:00' },
+        'tuesday': { isWorking: true, startTime: '08:00', endTime: '18:00' },
+        'wednesday': { isWorking: true, startTime: '08:00', endTime: '18:00' },
+        'thursday': { isWorking: true, startTime: '08:00', endTime: '18:00' },
+        'friday': { isWorking: true, startTime: '08:00', endTime: '18:00' },
+        'saturday': { isWorking: true, startTime: '08:00', endTime: '17:00' },
+        'sunday': { isWorking: false, startTime: '08:00', endTime: '18:00' },
+      }
+    };
+  },
+
+  // Salvar/Atualizar horários de um barbeiro
+  async saveBarberSchedule(schedule: BarberSchedule) {
+    try {
+      const scheduleRef = doc(db, "barberSchedules", schedule.barberId);
+      await setDoc(scheduleRef, {
+        ...schedule,
+        updatedAt: Timestamp.now(),
+      }, { merge: true });
+      console.log('✅ Horários do barbeiro salvos com sucesso');
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar horários do barbeiro:', error);
+      throw error;
+    }
+  },
+
+  // Resetar horários para padrão
+  async resetBarberSchedule(barberId: string) {
+    try {
+      const defaultSchedule = this.getDefaultSchedule(barberId);
+      await this.saveBarberSchedule(defaultSchedule);
+      console.log('✅ Horários resetados para padrão');
+    } catch (error: any) {
+      console.error('❌ Erro ao resetar horários:', error);
+      throw error;
+    }
+  },
+
+  // ===== SISTEMA DE AGENDAMENTO AVANÇADO =====
+
+  // 🧩 STEP 1: GENERATE TIME SLOTS
+  generateTimeSlots(start: string, end: string, intervalMinutes: number = 30): string[] {
+    const slots: string[] = [];
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    for (let minutes = startTotalMinutes; minutes < endTotalMinutes; minutes += intervalMinutes) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      slots.push(timeString);
+    }
+
+    return slots;
+  },
+
+  // 🧩 STEP 2: CHECK IF DAY IS AVAILABLE
+  isDayAvailable(barberSchedule: BarberSchedule, date: string): boolean {
+    // Convert date to day name (monday, tuesday...)
+    const dateObj = new Date(date);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[dateObj.getDay()];
+
+    // RULE 3: If day is not in workingDays → return NO slots
+    if (!barberSchedule.weekSchedule[dayName]?.isWorking) {
+      return false;
+    }
+
+    // RULE 2: If barber marked a full day as unavailable → return NO slots
+    if (barberSchedule.unavailableDates?.includes(date)) {
+      return false;
+    }
+
+    return true;
+  },
+
+  // 🧩 STEP 3: REMOVE UNAVAILABLE TIMES
+  removeUnavailableTimes(slots: string[], barberSchedule: BarberSchedule): string[] {
+    // RULE 5: If time is in unavailableTimes → invalid
+    if (!barberSchedule.unavailableTimes) return slots;
+
+    return slots.filter(slot => !barberSchedule.unavailableTimes!.includes(slot));
+  },
+
+  // 🧩 STEP 4: REMOVE BOOKED TIMES
+  removeBookedTimes(slots: string[], appointments: any[], date: string): string[] {
+    // RULE 1: If a time is already booked → cannot be booked again
+    const bookedTimes = appointments
+      .filter(appt => appt.date === date && appt.status !== 'cancelled')
+      .map(appt => appt.time);
+
+    return slots.filter(slot => !bookedTimes.includes(slot));
+  },
+
+  // 🧩 STEP 5: GET AVAILABLE SLOTS (MAIN FUNCTION)
+  async getAvailableSlots(barberId: string, date: string): Promise<string[]> {
+    try {
+      // STEP 1: Get barber schedule
+      const barberSchedule = await this.getBarberSchedule(barberId);
+      if (!barberSchedule) {
+        console.error('❌ Horário do barbeiro não encontrado');
+        return [];
+      }
+
+      // STEP 2: Check if day is available
+      if (!this.isDayAvailable(barberSchedule, date)) {
+        return [];
+      }
+
+      // STEP 3: Get working hours for this day
+      const dateObj = new Date(date);
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[dateObj.getDay()];
+      const daySchedule = barberSchedule.weekSchedule[dayName];
+
+      // STEP 4: Generate slots
+      let slots = this.generateTimeSlots(daySchedule.startTime, daySchedule.endTime);
+
+      // STEP 5: Remove unavailable times
+      slots = this.removeUnavailableTimes(slots, barberSchedule);
+
+      // STEP 6: Fetch appointments for this barber + date
+      const appointments = await this.getReservedSlotsByBarber(barberId, date);
+
+      // STEP 7: Remove booked times
+      slots = this.removeBookedTimes(slots, appointments, date);
+
+      // STEP 8: Remove past times (if today)
+      const today = new Date().toISOString().split('T')[0];
+      if (date === today) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        slots = slots.filter(slot => slot > currentTime);
+      }
+
+      return slots;
+    } catch (error: any) {
+      console.error('❌ Erro ao obter slots disponíveis:', error);
+      return [];
+    }
+  },
+
+  // 🧩 STEP 6: BOOK APPOINTMENT (CRITICAL)
+  async bookAppointment(barberId: string, date: string, time: string, userId: string, appointmentData: Partial<AppointmentData>) {
+    console.log('🔍 bookAppointment - Iniciando validação crítica...');
+
+    // STEP 1: Fetch barber schedule
+    const barberSchedule = await this.getBarberSchedule(barberId);
+    if (!barberSchedule) {
+      throw new Error("Barbeiro não encontrado");
+    }
+
+    // STEP 2: Validate day availability
+    if (!this.isDayAvailable(barberSchedule, date)) {
+      throw new Error("Dia não disponível para agendamento");
+    }
+
+    // STEP 3: Validate time is within working hours
+    const dateObj = new Date(date);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[dateObj.getDay()];
+    const daySchedule = barberSchedule.weekSchedule[dayName];
+
+    // RULE 4: If time is outside working hours → invalid
+    if (time < daySchedule.startTime || time > daySchedule.endTime) {
+      throw new Error("Horário fora do expediente");
+    }
+
+    // STEP 4: Check if time is in unavailable times
+    if (barberSchedule.unavailableTimes?.includes(time)) {
+      throw new Error("Horário indisponível");
+    }
+
+    // STEP 5: Fetch existing appointments and check double booking
+    const appointments = await this.getReservedSlotsByBarber(barberId, date);
+    const alreadyBooked = appointments.some(
+      (appt: any) => appt.date === date && appt.time === time && appt.status !== 'cancelled'
+    );
+
+    // RULE 1: If a time is already booked → cannot be booked again
+    if (alreadyBooked) {
+      throw new Error("Horário já agendado");
+    }
+
+    // STEP 6: Create appointment data
+    const newAppointmentData: AppointmentData = {
+      userId,
+      name: appointmentData.name || '',
+      phone: appointmentData.phone || '',
+      email: appointmentData.email || '',
+      date,
+      time,
+      barberId,
+      services: appointmentData.services || [],
+      notes: appointmentData.notes || '',
+      status: 'booked',
+      ...appointmentData
+    };
+
+    // STEP 7: Save appointment
+    const appointmentId = await this.createAppointment(newAppointmentData);
+
+    console.log('✅ Agendamento criado com sucesso após validações!');
+    return { id: appointmentId, ...newAppointmentData };
+  },
+
+  // 🧩 STEP 7: UPDATE BARBER AVAILABILITY
+  async updateBarberAvailability(barberId: string, data: Partial<BarberSchedule>) {
+    try {
+      const currentSchedule = await this.getBarberSchedule(barberId);
+      if (!currentSchedule) {
+        throw new Error("Horário do barbeiro não encontrado");
+      }
+
+      const updatedSchedule: BarberSchedule = {
+        ...currentSchedule,
+        ...data,
+        barberId, // Ensure barberId is preserved
+      };
+
+      await this.saveBarberSchedule(updatedSchedule);
+      console.log('✅ Disponibilidade do barbeiro atualizada');
+      return updatedSchedule;
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar disponibilidade:', error);
+      throw error;
+    }
   },
 };

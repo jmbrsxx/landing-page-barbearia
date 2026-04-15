@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppointmentsList from "@/components/AppointmentsList";
 import AdminDashboard from "@/components/AdminDashboard";
+import BarberScheduleManager from "@/components/BarberScheduleManager";
 import { CalendarCheck, BarChart3, Settings, LogOut, ArrowLeft, Lock, Trash2, Plus, Edit2 } from "lucide-react";
 import { appointmentsService, Service, Barber } from "@/services/appointmentsService";
 
@@ -351,9 +352,10 @@ const AdminPage = () => {
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             <Tabs defaultValue="services" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="services">Serviços</TabsTrigger>
                 <TabsTrigger value="barbers">Barbeiros</TabsTrigger>
+                <TabsTrigger value="schedules">Horários</TabsTrigger>
               </TabsList>
 
               {/* SERVIÇOS */}
@@ -545,6 +547,11 @@ const AdminPage = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* HORÁRIOS */}
+              <TabsContent value="schedules">
+                <BarberScheduleManager barbers={barbers} onScheduleUpdated={loadBarbers} />
               </TabsContent>
             </Tabs>
           </TabsContent>

@@ -9,7 +9,8 @@ interface TimeSlotSelectorProps {
   selectedDate: string;
   selectedTime: string;
   onTimeSelect: (time: string) => void;
-  reservedSlots?: string[]; // Novo: aceita horários reservados como prop
+  barberId?: string; // Novo: ID do barbeiro para slots específicos
+  reservedSlots?: string[]; // Mantido para compatibilidade
 }
 
 const BUSINESS_HOURS = {
@@ -54,22 +55,46 @@ const isPastTime = (date: string, time: string): boolean => {
   return false;
 };
 
-const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, reservedSlots = [] }: TimeSlotSelectorProps) => {
+const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, barberId, reservedSlots = [] }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [internalReservedSlots, setInternalReservedSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setTimeSlots(generateTimeSlots());
   }, []);
 
-  // Se não há propReservedSlots, tentar carregar do serviço (compatibilidade com código antigo)
+  // Carregar slots disponíveis baseado no barbeiro
   useEffect(() => {
-    if (reservedSlots && reservedSlots.length > 0) {
-      setInternalReservedSlots(reservedSlots);
-    } else if (selectedDate) {
-      loadReservedSlots();
+    if (selectedDate) {
+      if (barberId) {
+        // Novo sistema: slots específicos do barbeiro
+        loadAvailableSlotsForBarber();
+      } else if (reservedSlots && reservedSlots.length > 0) {
+        // Compatibilidade: usar prop reservedSlots
+        setInternalReservedSlots(reservedSlots);
+      } else {
+        // Fallback: carregar slots gerais (compatibilidade com código antigo)
+        loadReservedSlots();
+      }
     }
-  }, [selectedDate, reservedSlots]);
+  }, [selectedDate, barberId, reservedSlots]);
+
+  const loadAvailableSlotsForBarber = async () => {
+    if (!barberId || !selectedDate) return;
+
+    try {
+      setLoading(true);
+      const availableSlots = await appointmentsService.getAvailableSlots(barberId, selectedDate);
+      setTimeSlots(availableSlots);
+      setInternalReservedSlots([]); // Slots já são filtrados
+    } catch (error) {
+      console.error("Erro ao carregar slots disponíveis do barbeiro:", error);
+      setTimeSlots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadReservedSlots = async () => {
     try {
@@ -94,7 +119,7 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, reservedSl
   }
 
   const pastSlots = timeSlots.filter(slot => isPastTime(selectedDate, slot));
-  const availableCount = timeSlots.length - internalReservedSlots.length - pastSlots.length;
+  const availableCount = barberId ? timeSlots.length : timeSlots.length - internalReservedSlots.length - pastSlots.length;
 
   return (
     <div className="space-y-4">
@@ -104,15 +129,22 @@ const TimeSlotSelector = ({ selectedDate, selectedTime, onTimeSelect, reservedSl
           Horários Disponíveis
         </Label>
         
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-900">
-            <span className="font-semibold">{availableCount}</span> horários disponíveis em <span className="font-semibold">{new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}</span>
-          </p>
-        </div>
+        {loading ? (
+          <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-600">Carregando horários...</p>
+          </div>
+        ) : (
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900">
+              <span className="font-semibold">{availableCount}</span> horários disponíveis em <span className="font-semibold">{new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+              {barberId && <span className="block text-xs mt-1">Horários específicos do barbeiro selecionado</span>}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
           {timeSlots.map((slot) => {
-            const isReserved = internalReservedSlots.includes(slot);
+            const isReserved = barberId ? false : internalReservedSlots.includes(slot); // No novo sistema, slots já são filtrados
             const isPast = isPastTime(selectedDate, slot);
             const isDisabled = isReserved || isPast;
             const isSelected = selectedTime === slot;
