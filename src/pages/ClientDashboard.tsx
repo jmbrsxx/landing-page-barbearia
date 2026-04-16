@@ -13,7 +13,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ArrowLeft
+  ArrowLeft,
+  Menu
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { appointmentsService } from "@/services/appointmentsService";
@@ -42,6 +43,7 @@ const ClientDashboard = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeTab, setActiveTab] = useState("appointments");
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -261,32 +263,45 @@ const ClientDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pl-80">
-      <div className="container mx-auto px-6 max-w-6xl">
+    <div className="min-h-screen bg-background md:pl-64">
+      {/* Mobile menu button */}
+      <div className="md:hidden fixed top-4 left-4 z-30">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`bg-background shadow-lg transition-all ${sidebarOpen ? 'rotate-180' : ''}`}
+          title={sidebarOpen ? "Fechar menu" : "Abrir menu"}
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+      </div>
+
+      <div className={`container mx-auto px-4 md:px-6 max-w-6xl transition-all duration-300 ${!sidebarOpen ? 'md:max-w-full' : ''}`}>
         {/* Header */}
-        <div className="mb-8 pt-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16">
+        <div className="mb-6 md:mb-8 pt-16 md:pt-8">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <Avatar className="w-12 h-12 md:w-16 md:h-16">
                 <AvatarImage src={user.photoURL || ""} />
                 <AvatarFallback>
                   {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="font-heading text-3xl md:text-4xl font-bold">
+              <div className="flex-1 min-w-0">
+                <h1 className="font-heading text-xl md:text-4xl font-bold break-words">
                   Olá, {user.displayName || "Cliente"}!
                 </h1>
-                <p className="text-gray-600">{user.email}</p>
+                <p className="text-gray-600 text-sm md:text-base truncate">{user.email}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap gap-2 md:gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/")}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs md:text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Início
@@ -295,7 +310,7 @@ const ClientDashboard = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-xs md:text-sm"
               >
                 <LogOut className="w-4 h-4" />
                 Sair
@@ -307,7 +322,7 @@ const ClientDashboard = () => {
         {/* Page Title */}
         <div className="mb-6">
           <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl md:text-2xl font-bold">
               {activeTab === "appointments" && "Meus Agendamentos"}
               {activeTab === "services" && "Nossos Serviços"}
               {activeTab === "profile" && "Minha Conta"}
@@ -316,7 +331,7 @@ const ClientDashboard = () => {
               <div className="flex justify-start">
                 <Button
                   onClick={() => navigate("/cliente")}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-xs md:text-sm"
                 >
                   <Plus className="w-4 h-4" />
                   Novo Agendamento
@@ -328,14 +343,14 @@ const ClientDashboard = () => {
 
         {/* Content */}
         {activeTab === "appointments" && (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6 pb-8">
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="p-4 md:p-6">
                 {appointments.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 md:py-12">
                     <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">Você ainda não tem agendamentos</p>
-                    <Button onClick={() => navigate("/cliente")}>
+                    <p className="text-gray-600 mb-4 text-sm md:text-base">Você ainda não tem agendamentos</p>
+                    <Button onClick={() => navigate("/cliente")} size="sm" className="text-xs md:text-sm">
                       Fazer Primeiro Agendamento
                     </Button>
                   </div>
@@ -344,34 +359,35 @@ const ClientDashboard = () => {
                     {appointments.map((appointment) => (
                       <div
                         key={appointment.id}
-                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-5 bg-gray-50 rounded-lg border border-gray-200 gap-4"
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3 md:gap-4 flex-1 min-w-0">
                           {getStatusIcon(appointment.status)}
-                          <div>
-                            <p className="font-semibold text-gray-900">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm md:text-base">
                               {new Date(appointment.date + "T00:00:00").toLocaleDateString("pt-BR")}
                               {" às "}
                               {appointment.time}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs md:text-sm text-gray-600">
                               Barbeiro: {appointment.barberName}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs md:text-sm text-gray-600 break-words">
                               Serviços: {appointment.services.map(getServiceName).join(", ")}
                             </p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-start md:items-end gap-3 mt-4 md:mt-0">
+                        <div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
                           <div className="flex items-center gap-2">
                             {getStatusBadge(appointment.status)}
                           </div>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 w-full md:w-auto">
                             {appointment.status !== "confirmed" ? (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => updateAppointmentStatus(appointment.id, "confirmed")}
+                                className="text-xs flex-1 md:flex-none"
                               >
                                 Confirmar
                               </Button>
@@ -380,6 +396,7 @@ const ClientDashboard = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => updateAppointmentStatus(appointment.id, "pending")}
+                                className="text-xs flex-1 md:flex-none"
                               >
                                 Desconfirmar
                               </Button>
@@ -388,6 +405,7 @@ const ClientDashboard = () => {
                               variant="destructive"
                               size="sm"
                               onClick={() => removeAppointment(appointment.id)}
+                              className="text-xs flex-1 md:flex-none"
                             >
                               Remover
                             </Button>
@@ -403,18 +421,18 @@ const ClientDashboard = () => {
         )}
 
         {activeTab === "services" && (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6 pb-8">
             <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="p-4 md:p-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                   {services.map((service) => (
                     <div
                       key={service.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors"
+                      className="p-4 md:p-5 border border-gray-200 rounded-lg hover:border-primary transition-colors"
                     >
-                      <h3 className="font-semibold text-lg mb-2">{service.name}</h3>
-                      <p className="text-gray-600 mb-2">{service.estimatedTime} minutos</p>
-                      <p className="text-primary font-semibold">R$ {service.price.toFixed(2)}</p>
+                      <h3 className="font-semibold text-base md:text-lg mb-2">{service.name}</h3>
+                      <p className="text-gray-600 mb-2 text-sm md:text-base">{service.estimatedTime} minutos</p>
+                      <p className="text-primary font-semibold text-sm md:text-base">R$ {service.price.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -424,37 +442,37 @@ const ClientDashboard = () => {
         )}
 
         {activeTab === "profile" && (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6 pb-8">
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="p-4 md:p-6 space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Nome</label>
-                    <p className="text-gray-600">{userProfile?.displayName || user?.displayName || "Não informado"}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Nome</label>
+                    <p className="text-gray-600 text-sm md:text-base break-words">{userProfile?.displayName || user?.displayName || "Não informado"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Email</label>
-                    <p className="text-gray-600">{userProfile?.email || user?.email}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Email</label>
+                    <p className="text-gray-600 text-sm md:text-base break-words">{userProfile?.email || user?.email}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Telefone</label>
-                    <p className="text-gray-600">{userProfile?.phone || "Não informado"}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Telefone</label>
+                    <p className="text-gray-600 text-sm md:text-base">{userProfile?.phone || "Não informado"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Data de Nascimento</label>
-                    <p className="text-gray-600">{userProfile?.birthDate || "Não informado"}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Data de Nascimento</label>
+                    <p className="text-gray-600 text-sm md:text-base">{userProfile?.birthDate || "Não informado"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Como nos conheceu</label>
-                    <p className="text-gray-600">{userProfile?.howDidYouKnow || "Não informado"}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Como nos conheceu</label>
+                    <p className="text-gray-600 text-sm md:text-base">{userProfile?.howDidYouKnow || "Não informado"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">ID do Usuário</label>
-                    <p className="text-gray-600 text-sm">{user?.uid}</p>
+                    <label className="text-xs md:text-sm font-medium text-gray-700">ID do Usuário</label>
+                    <p className="text-gray-600 text-xs md:text-sm break-all">{user?.uid}</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Data de Cadastro</label>
-                    <p className="text-gray-600">
+                    <label className="text-xs md:text-sm font-medium text-gray-700">Data de Cadastro</label>
+                    <p className="text-gray-600 text-sm md:text-base">
                       {user?.metadata.creationTime
                         ? new Date(user.metadata.creationTime).toLocaleDateString("pt-BR")
                         : "Não disponível"}
@@ -463,20 +481,21 @@ const ClientDashboard = () => {
                 </div>
 
                 <div className="pt-6 border-t border-red-200">
-                  <h4 className="font-medium text-red-600 mb-2">Zona de Perigo</h4>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <h4 className="font-medium text-red-600 mb-2 text-sm md:text-base">Zona de Perigo</h4>
+                  <p className="text-xs md:text-sm text-gray-600 mb-4">
                     Ações irreversíveis. Tenha certeza antes de prosseguir.
                   </p>
                   <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-                    <h4 className="font-medium text-red-800 mb-2">Deletar Conta</h4>
-                    <p className="text-sm text-red-700 mb-4">
+                    <h4 className="font-medium text-red-800 mb-2 text-sm md:text-base">Deletar Conta</h4>
+                    <p className="text-xs md:text-sm text-red-700 mb-4">
                       Esta ação irá permanentemente deletar sua conta e todos os seus dados,
                       incluindo agendamentos, histórico e informações pessoais. Esta ação não pode ser desfeita.
                     </p>
                     <Button
                       variant="destructive"
                       onClick={handleDeleteAccount}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 w-full md:w-auto text-xs md:text-sm"
+                      size="sm"
                     >
                       <LogOut className="w-4 h-4" />
                       Deletar Minha Conta
@@ -496,7 +515,7 @@ const ClientDashboard = () => {
         />
       )}
 
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
     </div>
   );
 };
