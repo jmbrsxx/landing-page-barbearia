@@ -501,43 +501,45 @@ const ClientAppointmentPage = () => {
             )}
 
             {/* Botões de Navegação */}
-            <CardContent className="flex gap-2 justify-between pt-6 border-t mt-6 pb-6">
-              <Button
-                variant="outline"
-                onClick={() => (step === 1 ? navigate("/") : handlePrevStep())}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Voltar
-              </Button>
-
-              <div className="flex gap-2 flex-1">
+            <CardContent className="pt-6 border-t mt-6 pb-6">
+              <div className="flex flex-col md:flex-row gap-2 md:gap-2 md:justify-between">
                 <Button
-                  onClick={handleNextStep}
-                  className="flex items-center gap-2 flex-1"
-                  disabled={
-                    isSubmitting ||
-                    (step === 1 && !selectedBarber) ||
-                    (step === 2 && selectedServices.length === 0) ||
-                    (step === 3 && !selectedDate) ||
-                    (step === 4 && !selectedTime)
-                  }
+                  variant="outline"
+                  onClick={() => (step === 1 ? navigate("/") : handlePrevStep())}
+                  className="flex items-center gap-2 md:flex-none w-full md:w-auto"
                 >
-                  {step === 5
-                    ? isSubmitting
-                      ? "Agendando..."
-                      : "Agendar Horário"
-                    : "Próximo"}
-                  {step < 5 && <ChevronRight className="w-4 h-4" />}
+                  <ArrowLeft className="w-4 h-4" />
+                  Voltar
                 </Button>
 
-                {step === 5 && (
-                  <Link to="/cliente/dashboard" className="flex-1">
-                    <Button variant="outline" className="w-full flex items-center gap-2">
-                      Ver meus agendamentos
-                    </Button>
-                  </Link>
-                )}
+                <div className="flex flex-col md:flex-row gap-2 w-full md:flex-1">
+                  <Button
+                    onClick={handleNextStep}
+                    className="flex items-center gap-2 flex-1"
+                    disabled={
+                      isSubmitting ||
+                      (step === 1 && !selectedBarber) ||
+                      (step === 2 && selectedServices.length === 0) ||
+                      (step === 3 && !selectedDate) ||
+                      (step === 4 && !selectedTime)
+                    }
+                  >
+                    {step === 5
+                      ? isSubmitting
+                        ? "Agendando..."
+                        : "Agendar Horário"
+                      : "Próximo"}
+                    {step < 5 && <ChevronRight className="w-4 h-4" />}
+                  </Button>
+
+                  {step === 5 && (
+                    <Link to="/cliente/dashboard" className="w-full md:flex-1">
+                      <Button variant="outline" className="w-full flex items-center gap-2">
+                        Ver meus agendamentos
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
